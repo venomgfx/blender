@@ -339,13 +339,16 @@ static int lib_id_expand_local_cb(LibraryIDLinkCallbackData *cb_data)
   int const cb_flag = cb_data->cb_flag;
 
   if (cb_flag & IDWALK_CB_LOOPBACK) {
-    /* We should never have anything to do with loopback pointers here. */
+    /* We should never have anything to do with loop-back pointers here. */
     return IDWALK_RET_NOP;
   }
 
   if (cb_flag & IDWALK_CB_EMBEDDED) {
-    /* Embedded data-blocks need to be made fully local as well. */
-    if (*id_pointer != NULL) {
+    /* Embedded data-blocks need to be made fully local as well.
+     * Note however that in some cases (when owner ID had to be duplicated instead of being made
+     * local directly), its embedded IDs should also have already been duplicated, and hence be
+     * fully local here already. */
+    if (*id_pointer != NULL && ID_IS_LINKED(*id_pointer)) {
       BLI_assert(*id_pointer != id_self);
 
       lib_id_clear_library_data_ex(bmain, *id_pointer);
