@@ -26,6 +26,7 @@
 
 #include "DEG_depsgraph_query.h"
 
+#include "ED_image.h"
 #include "ED_view3d.h"
 
 #include "overlay_private.h"
@@ -57,13 +58,12 @@ void OVERLAY_grid_init(OVERLAY_Data *vedata)
   shd->grid_line_size = max_ff(0.0f, U.pixelsize - 1.0f) * 0.5f;
 
   if (pd->is_image_editor) {
-    const SpaceImage *sima = (SpaceImage *)draw_ctx->space_data;
-    const Image *image = sima->image;
-    shd->grid_flag = (image == NULL) ? PLANE_IMAGE | SHOW_GRID : 0;
+    SpaceImage *sima = (SpaceImage *)draw_ctx->space_data;
+    shd->grid_flag = ED_space_image_has_buffer(sima) ? 0 : PLANE_IMAGE | SHOW_GRID;
     shd->grid_distance = 1.0f;
     shd->grid_mesh_size = 1.0f;
     for (int step = 0; step < 8; step++) {
-      shd->grid_steps[step] = powf(10, step) * 0.01;
+      shd->grid_steps[step] = powf(4, step) * (1.0f / 16.0f);
     }
     return;
   }
@@ -198,12 +198,29 @@ void OVERLAY_grid_cache_init(OVERLAY_Data *vedata)
 
   DRWState state = DRW_STATE_WRITE_COLOR | DRW_STATE_BLEND_ALPHA;
   DRW_PASS_CREATE(psl->grid_ps, state);
-
-  GPUShader *sh = OVERLAY_shader_grid();
+  DRWShadingGroup *grp;
+  GPUShader *sh;
   struct GPUBatch *geom = DRW_cache_grid_get();
 
+  if (pd->is_image_editor) {
+    /* add quad background */
+    sh = OVERLAY_shader_grid_image();
+    grp = DRW_shgroup_create(sh, psl->grid_ps);
+    DRW_shgroup_call(grp, DRW_cache_quad_get(), NULL);
+    float color_back[4];
+    interp_v4_v4v4(color_back, G_draw.block.colorBackground, G_draw.block.colorGrid, 0.5);
+    DRW_shgroup_uniform_vec4_copy(grp, "color", color_back);
+
+    /* add wire border */
+    grp = DRW_shgroup_create(sh, psl->grid_ps);
+    DRW_shgroup_call(grp, DRW_cache_quad_wires_get(), NULL);
+    DRW_shgroup_uniform_vec4_copy(grp, "color", G_draw.block.colorGrid);
+  }
+
+  sh = OVERLAY_shader_grid();
+
   /* Create 3 quads to render ordered transparency Z axis */
-  DRWShadingGroup *grp = DRW_shgroup_create(sh, psl->grid_ps);
+  grp = DRW_shgroup_create(sh, psl->grid_ps);
   DRW_shgroup_uniform_int(grp, "gridFlag", &shd->zneg_flag, 1);
   DRW_shgroup_uniform_vec3(grp, "planeAxes", shd->zplane_axes, 1);
   DRW_shgroup_uniform_float(grp, "gridDistance", &shd->grid_distance, 1);

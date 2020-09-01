@@ -236,6 +236,7 @@ TEST_F(DrawTest, overlay_glsl_shaders)
     EXPECT_NE(OVERLAY_shader_facing(), nullptr);
     EXPECT_NE(OVERLAY_shader_gpencil_canvas(), nullptr);
     EXPECT_NE(OVERLAY_shader_grid(), nullptr);
+    EXPECT_NE(OVERLAY_shader_grid_image(), nullptr);
     EXPECT_NE(OVERLAY_shader_image(), nullptr);
     EXPECT_NE(OVERLAY_shader_motion_path_line(), nullptr);
     EXPECT_NE(OVERLAY_shader_motion_path_vert(), nullptr);

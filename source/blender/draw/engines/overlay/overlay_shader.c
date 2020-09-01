@@ -193,6 +193,7 @@ typedef struct OVERLAY_Shaders {
   GPUShader *facing;
   GPUShader *gpencil_canvas;
   GPUShader *grid;
+  GPUShader *grid_image;
   GPUShader *image;
   GPUShader *motion_path_line;
   GPUShader *motion_path_vert;
@@ -1041,6 +1042,20 @@ GPUShader *OVERLAY_shader_grid(void)
     });
   }
   return sh_data->grid;
+}
+
+GPUShader *OVERLAY_shader_grid_image(void)
+{
+  OVERLAY_Shaders *sh_data = &e_data.sh_data[0];
+  if (!sh_data->grid_image) {
+    sh_data->grid_image = DRW_shader_create_with_shaderlib(
+        datatoc_edit_uv_tiled_image_borders_vert_glsl,
+        NULL,
+        datatoc_gpu_shader_uniform_color_frag_glsl,
+        e_data.lib,
+        "#define blender_srgb_to_framebuffer_space(a) a\n");
+  }
+  return sh_data->grid_image;
 }
 
 GPUShader *OVERLAY_shader_image(void)
