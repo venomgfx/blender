@@ -233,7 +233,6 @@ void OVERLAY_shader_library_ensure(void)
     DRW_SHADER_LIB_ADD(e_data.lib, common_globals_lib);
     DRW_SHADER_LIB_ADD(e_data.lib, common_overlay_lib);
     DRW_SHADER_LIB_ADD(e_data.lib, common_view_lib);
-    // DRW_SHADER_LIB_ADD(e_data.lib, gpu_shader_colorspace_lib);
   }
 }
 
