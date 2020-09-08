@@ -90,6 +90,7 @@ uchar *GLImmediate::begin()
   /* Does the current buffer have enough room? */
   const size_t available_bytes = buffer_size() - buffer_offset();
 
+  GL_CHECK_RESOURCES("Immediate");
   GL_CHECK_ERROR("Immediate Pre-Begin");
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo_id());
@@ -159,7 +160,7 @@ void GLImmediate::end(void)
   GL_CHECK_ERROR("Immediate Post-Unmap");
 
   if (vertex_len > 0) {
-    GPU_context_active_get()->state_manager->apply_state();
+    GLContext::get()->state_manager->apply_state();
 
     /* We convert the offset in vertex offset from the buffer's start.
      * This works because we added some padding to align the first vertex vertex.  */

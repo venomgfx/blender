@@ -94,12 +94,12 @@ static void image_gpu_texture_get(Image *image,
         }
         else if (ibuf->zbuf_float) {
           *r_gpu_texture = GPU_texture_create_2d(
-              ibuf->x, ibuf->y, GPU_R16F, ibuf->zbuf_float, NULL);
+              __func__, ibuf->x, ibuf->y, 0, GPU_R16F, ibuf->zbuf_float);
           *r_owns_texture = true;
         }
         else if (ibuf->rect_float && ibuf->channels == 1) {
           *r_gpu_texture = GPU_texture_create_2d(
-              ibuf->x, ibuf->y, GPU_R16F, ibuf->rect_float, NULL);
+              __func__, ibuf->x, ibuf->y, 0, GPU_R16F, ibuf->rect_float);
           *r_owns_texture = true;
         }
       }
