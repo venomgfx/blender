@@ -23,8 +23,10 @@ void main()
   outlineColor = (is_pinned) ? pinned_col : vec4(fillColor.rgb, 0.0);
 
   vec3 world_pos = point_object_to_world(vec3(u, 0.0));
-  /* Move selected vertices to the top */
-  float depth = is_selected ? 0.1 : 0.2;
+  /* Move selected vertices to the top
+   * Vertices are between 0.0 and 0.2, Edges between 0.2 and 0.4
+   * actual pixels are at 0.75, 1.0 is used for the background. */
+  float depth = is_selected ? 0.05 : 0.15;
   gl_Position = vec4(point_world_to_ndc(world_pos).xy, depth, 1.0);
   gl_PointSize = pointSize;
 
