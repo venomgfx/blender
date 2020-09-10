@@ -208,13 +208,11 @@ static bool is_cursor_visible_2d(const DRWContextState *draw_ctx)
   if (space_data == NULL) {
     return false;
   }
-  else if (space_data->spacetype == SPACE_IMAGE) {
+  if (space_data->spacetype == SPACE_IMAGE) {
     SpaceImage *sima = (SpaceImage *)draw_ctx->space_data;
     return sima->mode == SI_MODE_UV;
   }
-  else {
-    return false;
-  }
+  return false;
 }
 
 void DRW_draw_cursor_2d(void)
