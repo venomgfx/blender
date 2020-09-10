@@ -40,7 +40,10 @@ void main()
 
   float half_size = sizeEdge;
   /* Enlarge edge for outline drawing. */
-  half_size += (lineStyle == OVERLAY_UV_LINE_STYLE_OUTLINE) ? max(sizeEdge, 1.0) : 0.0;
+  /* Factor of 3.0 out of nowhere! Seems to fix issues with float imprecision. */
+  half_size += (lineStyle == OVERLAY_UV_LINE_STYLE_OUTLINE) ?
+                   max(sizeEdge * (doSmoothWire ? 1.0 : 3.0), 1.0) :
+                   0.0;
   /* Add 1 px for AA */
   if (doSmoothWire) {
     half_size += 0.5;
