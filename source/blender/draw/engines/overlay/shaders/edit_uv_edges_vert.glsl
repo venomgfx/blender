@@ -27,6 +27,9 @@ void main()
     selectionFac = 0.0;
   }
 
+  float depth = 1.0 - selectionFac;
+  gl_Position.z = depth;
+
   /* Avoid precision loss. */
   stippleStart = stipplePos = 500.0 + 500.0 * (gl_Position.xy / gl_Position.w);
 }

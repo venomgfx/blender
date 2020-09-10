@@ -485,6 +485,9 @@ static void OVERLAY_draw_scene(void *vedata)
   if (pd->is_image_editor) {
     OVERLAY_background_draw(data);
     OVERLAY_grid_draw(data);
+    if (DRW_state_is_fbo()) {
+      GPU_framebuffer_bind(dfbl->overlay_fb);
+    }
     OVERLAY_edit_uv_draw(data);
     return;
   }
