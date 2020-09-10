@@ -16,16 +16,17 @@ const vec4 pinned_col = vec4(1.0, 0.0, 0.0, 1.0);
 
 void main()
 {
-  vec3 world_pos = point_object_to_world(vec3(u, 0.0));
-  gl_Position = point_world_to_ndc(world_pos);
-
-  gl_PointSize = pointSize;
-
   bool is_selected = (flag & (VERT_UV_SELECT | FACE_UV_SELECT)) != 0;
   bool is_pinned = (flag & VERT_UV_PINNED) != 0;
   vec4 deselect_col = (is_pinned) ? pinned_col : vec4(colorWire.rgb, 1.0);
   fillColor = (is_selected) ? colorVertexSelect : deselect_col;
   outlineColor = (is_pinned) ? pinned_col : vec4(fillColor.rgb, 0.0);
+
+  vec3 world_pos = point_object_to_world(vec3(u, 0.0));
+  /* Move selected vertices to the top */
+  float depth = is_selected ? 0.0 : 0.05;
+  gl_Position = vec4(point_world_to_ndc(world_pos).xy, depth, 1.0);
+  gl_PointSize = pointSize;
 
   // calculate concentric radii in pixels
   float radius = 0.5 * pointSize;

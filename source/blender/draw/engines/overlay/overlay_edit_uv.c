@@ -164,7 +164,8 @@ void OVERLAY_edit_uv_cache_init(OVERLAY_Data *vedata)
     /* uv verts */
     {
       DRW_PASS_CREATE(psl->edit_uv_verts_ps,
-                      DRW_STATE_WRITE_COLOR | DRW_STATE_DEPTH_ALWAYS | DRW_STATE_BLEND_ALPHA);
+                      DRW_STATE_WRITE_COLOR | DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_LESS_EQUAL |
+                          DRW_STATE_BLEND_ALPHA);
       GPUShader *sh = OVERLAY_shader_edit_uv_verts_get();
       pd->edit_uv_verts_grp = DRW_shgroup_create(sh, psl->edit_uv_verts_ps);
 
