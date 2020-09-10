@@ -16,7 +16,7 @@ void main()
   /* Snap vertices to the pixel grid to reduce artifacts. */
   vec2 half_viewport_res = sizeViewport.xy * 0.5;
   vec2 half_pixel_offset = sizeViewportInv * 0.5;
-  gl_Position.xy = round(gl_Position.xy * half_viewport_res) / half_viewport_res +
+  gl_Position.xy = floor(gl_Position.xy * half_viewport_res) / half_viewport_res +
                    half_pixel_offset;
 
   bool is_select = (flag & VERT_UV_SELECT) != 0;
