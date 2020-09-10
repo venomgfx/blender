@@ -63,13 +63,11 @@ GLFrameBuffer::GLFrameBuffer(
   viewport_[2] = scissor_[2] = w;
   viewport_[3] = scissor_[3] = h;
 
-#ifndef __APPLE__
-  if (fbo_id_ && (G.debug & G_DEBUG_GPU) && (GLEW_VERSION_4_3 || GLEW_KHR_debug)) {
+  if (fbo_id_ && GLContext::debug_layer_support) {
     char sh_name[32];
     SNPRINTF(sh_name, "FrameBuffer-%s", name);
     glObjectLabel(GL_FRAMEBUFFER, fbo_id_, -1, sh_name);
   }
-#endif
 }
 
 GLFrameBuffer::~GLFrameBuffer()
@@ -78,8 +76,8 @@ GLFrameBuffer::~GLFrameBuffer()
     return;
   }
 
-  if (context_ == GLContext::get()) {
-    /* Context might be partially freed. This happens when destroying the window frame-buffers. */
+  /* Context might be partially freed. This happens when destroying the window frame-buffers. */
+  if (context_ == Context::get()) {
     glDeleteFramebuffers(1, &fbo_id_);
   }
   else {
@@ -89,7 +87,7 @@ GLFrameBuffer::~GLFrameBuffer()
   if (context_->active_fb == this && context_->back_left != this) {
     /* If this assert triggers it means the frame-buffer is being freed while in use by another
      * context which, by the way, is TOTALLY UNSAFE!!!  */
-    BLI_assert(context_ == GLContext::get());
+    BLI_assert(context_ == Context::get());
     GPU_framebuffer_restore();
   }
 }
@@ -100,15 +98,13 @@ void GLFrameBuffer::init(void)
   state_manager_ = static_cast<GLStateManager *>(context_->state_manager);
   glGenFramebuffers(1, &fbo_id_);
 
-#ifndef __APPLE__
-  if ((G.debug & G_DEBUG_GPU) && (GLEW_VERSION_4_3 || GLEW_KHR_debug)) {
+  if (GLContext::debug_layer_support) {
     char sh_name[64];
     SNPRINTF(sh_name, "FrameBuffer-%s", name_);
     /* Binding before setting the label is needed on some drivers. */
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_);
     glObjectLabel(GL_FRAMEBUFFER, fbo_id_, -1, sh_name);
   }
-#endif
 }
 
 /** \} */

@@ -62,6 +62,7 @@ class GLContext : public Context {
   static GLint max_ubo_binds;
   /** Extensions. */
   static bool base_instance_support;
+  static bool debug_layer_support;
   static bool texture_cube_map_array_support;
   /** Workarounds. */
   static bool texture_copy_workaround;
@@ -98,8 +99,8 @@ class GLContext : public Context {
   void activate(void) override;
   void deactivate(void) override;
 
-  void flush(void);
-  void finish(void);
+  void flush(void) override;
+  void finish(void) override;
 
   void memory_statistics_get(int *total_mem, int *free_mem) override;
 

@@ -28,6 +28,8 @@
 
 #include "glew-mx.h"
 
+#include "gl_debug.hh"
+
 #include "gl_backend.hh"
 
 namespace blender::gpu {
@@ -151,6 +153,8 @@ static bool detect_mip_render_workaround(void)
   float clear_color[4] = {1.0f, 0.5f, 0.0f, 0.0f};
   float *source_pix = (float *)MEM_callocN(sizeof(float[4]) * cube_size * cube_size * 6, __func__);
 
+  /* NOTE: Debug layers are not yet enabled. Force use of glGetError. */
+  debug::check_gl_error("Cubemap Workaround Start");
   /* Not using GPU API since it is not yet fully initialized. */
   GLuint tex, fb;
   /* Create cubemap with 2 mip level. */
@@ -158,8 +162,9 @@ static bool detect_mip_render_workaround(void)
   glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
   for (int mip = 0; mip < 2; mip++) {
     for (int i = 0; i < 6; i++) {
+      const int width = cube_size / (1 << mip);
       GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
-      glTexImage2D(target, mip, GL_RGBA16F, 2, 2, 0, GL_RGBA, GL_FLOAT, source_pix);
+      glTexImage2D(target, mip, GL_RGBA16F, width, width, 0, GL_RGBA, GL_FLOAT, source_pix);
     }
   }
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
@@ -181,6 +186,8 @@ static bool detect_mip_render_workaround(void)
 
   glDeleteFramebuffers(1, &fb);
   glDeleteTextures(1, &tex);
+
+  debug::check_gl_error("Cubemap Workaround End9");
 
   return enable_workaround;
 }
@@ -323,6 +330,7 @@ GLint GLContext::max_ubo_size;
 GLint GLContext::max_ubo_binds;
 /** Extensions. */
 bool GLContext::base_instance_support = false;
+bool GLContext::debug_layer_support = false;
 bool GLContext::texture_cube_map_array_support = false;
 /** Workarounds. */
 bool GLContext::texture_copy_workaround = false;
@@ -347,6 +355,12 @@ void GLBackend::capabilities_init(void)
   glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &GLContext::max_ubo_size);
   GLContext::base_instance_support = GLEW_ARB_base_instance;
   GLContext::texture_cube_map_array_support = GLEW_ARB_texture_cube_map_array;
+  GLContext::debug_layer_support = (GLEW_VERSION_4_3 || GLEW_KHR_debug);
+
+  if ((G.debug & G_DEBUG_GPU) == 0) {
+    /* Disable this feature entierly when not debugging. */
+    GLContext::debug_layer_support = false;
+  }
 
   detect_workarounds();
 }

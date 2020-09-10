@@ -6127,6 +6127,10 @@ static void rna_def_userdef_experimental(BlenderRNA *brna)
   RNA_def_property_boolean_sdna(prop, NULL, "use_drw_image_editor", 1);
   RNA_def_property_ui_text(
       prop, "Image Editor Draw Engine", "Use draw manager for rendering the uv/image editor");
+
+  prop = RNA_def_property(srna, "use_tools_missing_icons", PROP_BOOLEAN, PROP_NONE);
+  RNA_def_property_boolean_sdna(prop, NULL, "use_tools_missing_icons", 1);
+  RNA_def_property_ui_text(prop, "Tools with Missing Icons", "Show tools with missing icons");
 }
 
 static void rna_def_userdef_addon_collection(BlenderRNA *brna, PropertyRNA *cprop)
