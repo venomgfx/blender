@@ -22,7 +22,7 @@ void main()
     vec4 position = point_world_to_ndc(world_pos);
     /* Move drawn pixels to the front. In the overlay engine the depth is used
      * to detect if a transparency texture or the background color should be drawn. */
-    position.z = 0.0;
+    position.z = 0.5;
     gl_Position = position;
     uvs = world_pos.xy;
   }

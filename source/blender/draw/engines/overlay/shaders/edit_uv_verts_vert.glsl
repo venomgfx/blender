@@ -24,7 +24,7 @@ void main()
 
   vec3 world_pos = point_object_to_world(vec3(u, 0.0));
   /* Move selected vertices to the top */
-  float depth = is_selected ? 0.0 : 0.05;
+  float depth = is_selected ? 0.1 : 0.2;
   gl_Position = vec4(point_world_to_ndc(world_pos).xy, depth, 1.0);
   gl_PointSize = pointSize;
 

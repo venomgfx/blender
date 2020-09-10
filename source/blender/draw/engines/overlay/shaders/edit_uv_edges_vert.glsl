@@ -20,14 +20,8 @@ void main()
                    half_pixel_offset;
 
   bool is_select = (flag & VERT_UV_SELECT) != 0;
-  if (is_select) {
-    selectionFac = 1.0;
-  }
-  else {
-    selectionFac = 0.0;
-  }
-
-  float depth = 1.0 - selectionFac;
+  selectionFac = is_select ? 1.0 : 0.0;
+  float depth = is_select ? 0.3 : 0.4;
   gl_Position.z = depth;
 
   /* Avoid precision loss. */
