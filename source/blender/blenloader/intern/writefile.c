@@ -1488,6 +1488,9 @@ static void write_view_layer(BlendWriter *writer, ViewLayer *view_layer)
   LISTBASE_FOREACH (FreestyleLineSet *, fls, &view_layer->freestyle_config.linesets) {
     BLO_write_struct(writer, FreestyleLineSet, fls);
   }
+  LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+    BLO_write_struct(writer, ViewLayerAOV, aov);
+  }
   write_layer_collections(writer, &view_layer->layer_collections);
 }
 

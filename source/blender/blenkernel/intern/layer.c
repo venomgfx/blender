@@ -54,6 +54,8 @@
 
 #include "DRW_engine.h"
 
+#include "RE_engine.h"
+
 #include "MEM_guardedalloc.h"
 
 /* Set of flags which are dependent on a collection settings. */
@@ -274,6 +276,8 @@ void BKE_view_layer_free_ex(ViewLayer *view_layer, const bool do_id_user)
     }
   }
   BLI_freelistN(&view_layer->drawdata);
+  BLI_freelistN(&view_layer->aovs);
+  view_layer->active_aov = NULL;
 
   MEM_SAFE_FREE(view_layer->stats);
 
@@ -399,6 +403,28 @@ void BKE_view_layer_base_select_and_set_active(struct ViewLayer *view_layer, Bas
 }
 
 /**************************** Copy View Layer and Layer Collections ***********************/
+static void layer_aov_copy_data(ViewLayer *view_layer_dst,
+                                const ViewLayer *view_layer_src,
+                                ListBase *aovs_dst,
+                                const ListBase *aovs_src)
+{
+  if (aovs_src != NULL) {
+    BLI_duplicatelist(aovs_dst, aovs_src);
+  }
+
+  ViewLayerAOV *aov_dst = aovs_dst->first;
+  const ViewLayerAOV *aov_src = aovs_src->first;
+
+  while (aov_dst != NULL) {
+    BLI_assert(aov_src);
+    if (aov_src == view_layer_src->active_aov) {
+      view_layer_dst->active_aov = aov_dst;
+    }
+
+    aov_dst = aov_dst->next;
+    aov_src = aov_src->next;
+  }
+}
 
 static void layer_collections_copy_data(ViewLayer *view_layer_dst,
                                         const ViewLayer *view_layer_src,
@@ -468,6 +494,10 @@ void BKE_view_layer_copy_data(Scene *scene_dst,
 
   LayerCollection *lc_scene_dst = view_layer_dst->layer_collections.first;
   lc_scene_dst->collection = scene_dst->master_collection;
+
+  BLI_listbase_clear(&view_layer_dst->aovs);
+  layer_aov_copy_data(
+      view_layer_dst, view_layer_src, &view_layer_dst->aovs, &view_layer_src->aovs);
 
   if ((flag & LIB_ID_CREATE_NO_USER_REFCOUNT) == 0) {
     id_us_plus((ID *)view_layer_dst->mat_override);
@@ -1827,3 +1857,98 @@ void BKE_layer_eval_view_layer_indexed(struct Depsgraph *depsgraph,
   BLI_assert(view_layer != NULL);
   layer_eval_view_layer(depsgraph, scene, view_layer);
 }
+
+/* -------------------------------------------------------------------- */
+/** \name Shader AOV
+ * \{ */
+
+static void viewlayer_aov_active_set(ViewLayer *view_layer, ViewLayerAOV *aov)
+{
+  if (aov != NULL) {
+    BLI_assert(BLI_findindex(&view_layer->aovs, aov) != -1);
+    view_layer->active_aov = aov;
+  }
+  else {
+    view_layer->active_aov = NULL;
+  }
+}
+
+struct ViewLayerAOV *BKE_view_layer_add_aov(struct ViewLayer *view_layer)
+{
+  ViewLayerAOV *aov;
+  aov = MEM_callocN(sizeof(ViewLayerAOV), __func__);
+  BLI_addtail(&view_layer->aovs, aov);
+  BLI_strncpy(aov->name, "AOV", 64);
+  viewlayer_aov_active_set(view_layer, aov);
+  return aov;
+}
+
+void BKE_view_layer_remove_aov(ViewLayer *view_layer, ViewLayerAOV *aov)
+{
+  BLI_assert(BLI_findindex(&view_layer->aovs, aov) != -1);
+  BLI_assert(aov != NULL);
+  if (view_layer->active_aov == aov) {
+    if (aov->next) {
+      viewlayer_aov_active_set(view_layer, aov->next);
+    }
+    else {
+      viewlayer_aov_active_set(view_layer, aov->prev);
+    }
+  }
+  BLI_freelinkN(&view_layer->aovs, aov);
+}
+
+void BKE_view_layer_set_active_aov(ViewLayer *view_layer, ViewLayerAOV *aov)
+{
+  viewlayer_aov_active_set(view_layer, aov);
+}
+
+static void bke_view_layer_verify_aov_cb(void *userdata,
+                                         Scene *UNUSED(scene),
+                                         ViewLayer *UNUSED(view_layer),
+                                         const char *name,
+                                         int UNUSED(channels),
+                                         const char *UNUSED(chanid),
+                                         int UNUSED(type))
+{
+  GHash *name_count = userdata;
+  void **value_p;
+  void *key = BLI_strdup(name);
+
+  if (!BLI_ghash_ensure_p(name_count, key, &value_p)) {
+    *value_p = POINTER_FROM_INT(1);
+  }
+  else {
+    int value = POINTER_AS_INT(*value_p);
+    value++;
+    *value_p = POINTER_FROM_INT(value);
+    MEM_freeN(key);
+  }
+}
+
+void BKE_view_layer_verify_aov(struct RenderEngine *engine,
+                               struct Scene *scene,
+                               struct ViewLayer *view_layer)
+{
+  GHash *name_count = BLI_ghash_str_new(__func__);
+  RE_engine_update_render_passes(
+      engine, scene, view_layer, bke_view_layer_verify_aov_cb, name_count);
+  LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+    void **value_p = BLI_ghash_lookup(name_count, aov->name);
+    int count = POINTER_AS_INT(value_p);
+    SET_FLAG_FROM_TEST(aov->flag, count > 1, AOV_CONFLICT);
+  }
+  BLI_ghash_free(name_count, MEM_freeN, NULL);
+}
+
+ViewLayer *BKE_view_layer_find_with_aov(struct Scene *scene, struct ViewLayerAOV *aov)
+{
+  LISTBASE_FOREACH (ViewLayer *, view_layer, &scene->view_layers) {
+    if (BLI_findindex(&view_layer->aovs, aov) != -1) {
+      return view_layer;
+    }
+  }
+  return NULL;
+}
+
+/** \} */

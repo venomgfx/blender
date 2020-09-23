@@ -4059,6 +4059,9 @@ static void direct_link_view_layer(BlendDataReader *reader, ViewLayer *view_laye
   BLO_read_list(reader, &(view_layer->freestyle_config.modules));
   BLO_read_list(reader, &(view_layer->freestyle_config.linesets));
 
+  BLO_read_list(reader, &view_layer->aovs);
+  BLO_read_data_address(reader, &view_layer->active_aov);
+
   BLI_listbase_clear(&view_layer->drawdata);
   view_layer->object_bases_array = NULL;
   view_layer->object_bases_hash = NULL;
