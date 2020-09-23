@@ -12,6 +12,8 @@ layout(std140) uniform renderpass_block
   bool renderPassEmit;
   bool renderPassSSSColor;
   bool renderPassEnvironment;
+  bool renderPassAOV;
+  int renderPassAOVActive;
 };
 
 /** \} */

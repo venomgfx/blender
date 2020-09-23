@@ -430,7 +430,9 @@ typedef struct EEVEE_RenderPassData {
   int renderPassEmit;
   int renderPassSSSColor;
   int renderPassEnvironment;
-  int _pad[1];
+  int renderPassAOV;
+  int renderPassAOVActive;
+  int _pad[3];
 } EEVEE_RenderPassData;
 
 /* ************ LIGHT UBO ************* */
@@ -958,6 +960,8 @@ typedef struct EEVEE_PrivateData {
   /* Renderpasses */
   /* Bitmask containing the active render_passes */
   eViewLayerEEVEEPassType render_passes;
+  int aov_hash;
+
   /* Uniform references that are referenced inside the `renderpass_pass`. They are updated
    * to reuse the drawing pass and the shading group. */
   int renderpass_type;
