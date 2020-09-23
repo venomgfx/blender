@@ -453,6 +453,16 @@ RenderResult *render_result_new(Render *re,
       if (view_layer->eevee.render_passes & EEVEE_RENDER_PASS_VOLUME_TRANSMITTANCE) {
         RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_VOLUME_TRANSMITTANCE, view, "RGB");
       }
+      LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+        switch (aov->type) {
+          case AOV_TYPE_COLOR:
+            RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 4, aov->name, view, "RGBA");
+            break;
+          case AOV_TYPE_VALUE:
+            RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 1, aov->name, view, "X");
+            break;
+        }
+      }
 #undef RENDER_LAYER_ADD_PASS_SAFE
     }
   }

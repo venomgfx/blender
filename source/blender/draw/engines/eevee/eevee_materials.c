@@ -24,6 +24,7 @@
 
 #include "BLI_alloca.h"
 #include "BLI_ghash.h"
+#include "BLI_hash.h"
 #include "BLI_listbase.h"
 #include "BLI_math_bits.h"
 #include "BLI_memblock.h"
@@ -244,37 +245,69 @@ void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
     /* Create RenderPass UBO */
     if (sldata->renderpass_ubo.combined == NULL) {
       EEVEE_RenderPassData data;
-      data = (EEVEE_RenderPassData){true, true, true, true, true, false, false};
+      data = (EEVEE_RenderPassData){true, true, true, true, true, false, false, false, 0};
       sldata->renderpass_ubo.combined = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.combined");
 
-      data = (EEVEE_RenderPassData){true, false, false, false, false, true, false};
+      data = (EEVEE_RenderPassData){true, false, false, false, false, true, false, false, 0};
       sldata->renderpass_ubo.diff_color = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.diff_color");
 
-      data = (EEVEE_RenderPassData){true, true, false, false, false, false, false};
+      data = (EEVEE_RenderPassData){true, true, false, false, false, false, false, false, 0};
       sldata->renderpass_ubo.diff_light = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.diff_light");
 
-      data = (EEVEE_RenderPassData){false, false, true, false, false, false, false};
+      data = (EEVEE_RenderPassData){false, false, true, false, false, false, false, false, 0};
       sldata->renderpass_ubo.spec_color = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.spec_color");
 
-      data = (EEVEE_RenderPassData){false, false, true, true, false, false, false};
+      data = (EEVEE_RenderPassData){false, false, true, true, false, false, false, false, 0};
       sldata->renderpass_ubo.spec_light = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.spec_light");
 
-      data = (EEVEE_RenderPassData){false, false, false, false, true, false, false};
+      data = (EEVEE_RenderPassData){false, false, false, false, true, false, false, false, 0};
       sldata->renderpass_ubo.emit = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.emit");
 
-      data = (EEVEE_RenderPassData){true, true, true, true, true, false, true};
+      data = (EEVEE_RenderPassData){true, true, true, true, true, false, true, false, 0};
       sldata->renderpass_ubo.environment = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.environment");
+
+      for (int aov_index = 0; aov_index < MAX_AOVS; aov_index++) {
+        data = (EEVEE_RenderPassData){false, false, false, false, false, false, false, true, 0};
+        sldata->renderpass_ubo.aovs[aov_index] = GPU_uniformbuf_create_ex(
+            sizeof(data), &data, "renderpass_ubo.aovs");
+      }
     }
 
     /* Used combined pass by default. */
     g_data->renderpass_ubo = sldata->renderpass_ubo.combined;
+
+    {
+      g_data->num_aovs_used = 0;
+      if ((stl->g_data->render_passes & EEVEE_RENDER_PASS_AOV) != 0) {
+        EEVEE_RenderPassData data = {false, false, false, false, false, false, false, true, 0};
+        if (stl->g_data->aov_name_hash == EEVEE_AOV_HASH_ALL) {
+          ViewLayer *view_layer = draw_ctx->view_layer;
+          int aov_index = 0;
+          LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+            if (aov_index == MAX_AOVS) {
+              break;
+            }
+            int aov_name_hash = BLI_hash_string(aov->name);
+            data.renderPassAOVActive = aov_name_hash;
+            GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[aov_index], &data);
+            aov_index++;
+          }
+          g_data->num_aovs_used = aov_index;
+        }
+        else {
+          data.renderPassAOVActive = stl->g_data->aov_name_hash;
+          GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[0], &data);
+          g_data->num_aovs_used = 1;
+        }
+      }
+    }
 
     /* HACK: EEVEE_material_get can create a new context. This can only be
      * done when there is no active framebuffer. We do this here otherwise
@@ -950,6 +983,9 @@ void EEVEE_material_output_init(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata,
   if (pd->render_passes & EEVEE_RENDER_PASS_SPECULAR_COLOR) {
     material_renderpass_init(fbl, &txl->spec_color_accum, texture_format, do_clear);
   }
+  if (pd->render_passes & EEVEE_RENDER_PASS_AOV) {
+    material_renderpass_init(fbl, &txl->aov_surface_accum[0], texture_format, do_clear);
+  }
   if (pd->render_passes & EEVEE_RENDER_PASS_SPECULAR_LIGHT) {
     material_renderpass_init(fbl, &txl->spec_light_accum, texture_format, do_clear);
 
@@ -1014,6 +1050,15 @@ void EEVEE_material_output_accumulate(EEVEE_ViewLayerData *sldata, EEVEE_Data *v
 
       if (effects->enabled_effects & EFFECT_SSR) {
         EEVEE_reflection_output_accumulate(sldata, vedata);
+      }
+    }
+    if (pd->render_passes & EEVEE_RENDER_PASS_AOV) {
+      for (int aov_index = 0; aov_index < pd->num_aovs_used; aov_index++) {
+        material_renderpass_accumulate(fbl,
+                                       material_accum_ps,
+                                       pd,
+                                       txl->aov_surface_accum[aov_index],
+                                       sldata->renderpass_ubo.aovs[aov_index]);
       }
     }
 

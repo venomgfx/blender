@@ -163,7 +163,9 @@ BLI_INLINE bool eevee_hdri_preview_overlay_enabled(const View3D *v3d)
 #define EEVEE_RENDERPASSES_MATERIAL \
   (EEVEE_RENDER_PASS_EMIT | EEVEE_RENDER_PASS_DIFFUSE_COLOR | EEVEE_RENDER_PASS_DIFFUSE_LIGHT | \
    EEVEE_RENDER_PASS_SPECULAR_COLOR | EEVEE_RENDER_PASS_SPECULAR_LIGHT | \
-   EEVEE_RENDER_PASS_ENVIRONMENT)
+   EEVEE_RENDER_PASS_ENVIRONMENT | EEVEE_RENDER_PASS_AOV)
+#define EEVEE_AOV_HASH_ALL -1
+#define MAX_AOVS 8
 
 /* Material shader variations */
 enum {
@@ -376,6 +378,7 @@ typedef struct EEVEE_TextureList {
   struct GPUTexture *diff_light_accum;
   struct GPUTexture *spec_color_accum;
   struct GPUTexture *spec_light_accum;
+  struct GPUTexture *aov_surface_accum[MAX_AOVS];
   struct GPUTexture *emit_accum;
   struct GPUTexture *bloom_accum;
   struct GPUTexture *ssr_accum;
@@ -861,6 +864,7 @@ typedef struct EEVEE_ViewLayerData {
     struct GPUUniformBuf *spec_color;
     struct GPUUniformBuf *spec_light;
     struct GPUUniformBuf *emit;
+    struct GPUUniformBuf *aovs[MAX_AOVS];
   } renderpass_ubo;
 
   /* Common Uniform Buffer */
@@ -960,7 +964,8 @@ typedef struct EEVEE_PrivateData {
   /* Renderpasses */
   /* Bitmask containing the active render_passes */
   eViewLayerEEVEEPassType render_passes;
-  int aov_hash;
+  int aov_name_hash;
+  int num_aovs_used;
 
   /* Uniform references that are referenced inside the `renderpass_pass`. They are updated
    * to reuse the drawing pass and the shading group. */
@@ -1287,7 +1292,8 @@ void EEVEE_renderpasses_output_accumulate(EEVEE_ViewLayerData *sldata,
                                           bool post_effect);
 void EEVEE_renderpasses_postprocess(EEVEE_ViewLayerData *sldata,
                                     EEVEE_Data *vedata,
-                                    eViewLayerEEVEEPassType renderpass_type);
+                                    eViewLayerEEVEEPassType renderpass_type,
+                                    int aov_index);
 void EEVEE_renderpasses_draw(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata);
 void EEVEE_renderpasses_draw_debug(EEVEE_Data *vedata);
 bool EEVEE_renderpasses_only_first_sample_pass_active(EEVEE_Data *vedata);
