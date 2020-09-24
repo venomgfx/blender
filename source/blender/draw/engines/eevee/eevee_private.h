@@ -53,6 +53,7 @@ extern struct DrawEngineType draw_engine_eevee_type;
 #define MAX_SHADOW_CASCADE 8
 #define MAX_SHADOW_CUBE (MAX_SHADOW - MAX_CASCADE_NUM * MAX_SHADOW_CASCADE)
 #define MAX_BLOOM_STEP 16
+#define MAX_AOVS 64
 
 // #define DEBUG_SHADOW_DISTRIBUTION
 
@@ -165,7 +166,6 @@ BLI_INLINE bool eevee_hdri_preview_overlay_enabled(const View3D *v3d)
    EEVEE_RENDER_PASS_SPECULAR_COLOR | EEVEE_RENDER_PASS_SPECULAR_LIGHT | \
    EEVEE_RENDER_PASS_ENVIRONMENT | EEVEE_RENDER_PASS_AOV)
 #define EEVEE_AOV_HASH_ALL -1
-#define MAX_AOVS 8
 
 /* Material shader variations */
 enum {

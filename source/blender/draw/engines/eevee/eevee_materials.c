@@ -272,12 +272,6 @@ void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
       data = (EEVEE_RenderPassData){true, true, true, true, true, false, true, false, 0};
       sldata->renderpass_ubo.environment = GPU_uniformbuf_create_ex(
           sizeof(data), &data, "renderpass_ubo.environment");
-
-      for (int aov_index = 0; aov_index < MAX_AOVS; aov_index++) {
-        data = (EEVEE_RenderPassData){false, false, false, false, false, false, false, true, 0};
-        sldata->renderpass_ubo.aovs[aov_index] = GPU_uniformbuf_create_ex(
-            sizeof(data), &data, "renderpass_ubo.aovs");
-      }
     }
 
     /* Used combined pass by default. */
@@ -286,7 +280,7 @@ void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
     {
       g_data->num_aovs_used = 0;
       if ((stl->g_data->render_passes & EEVEE_RENDER_PASS_AOV) != 0) {
-        EEVEE_RenderPassData data = {false, false, false, false, false, false, false, true, 0};
+        EEVEE_RenderPassData data = {true, true, true, true, true, false, false, true, 0};
         if (stl->g_data->aov_name_hash == EEVEE_AOV_HASH_ALL) {
           ViewLayer *view_layer = draw_ctx->view_layer;
           int aov_index = 0;
@@ -296,16 +290,33 @@ void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
             }
             int aov_name_hash = BLI_hash_string(aov->name);
             data.renderPassAOVActive = aov_name_hash;
-            GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[aov_index], &data);
+            if (sldata->renderpass_ubo.aovs[aov_index]) {
+              GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[aov_index], &data);
+            }
+            else {
+              sldata->renderpass_ubo.aovs[aov_index] = GPU_uniformbuf_create_ex(
+                  sizeof(data), &data, "renderpass_ubo.aovs");
+            }
             aov_index++;
           }
           g_data->num_aovs_used = aov_index;
         }
         else {
+          /* Rendering a single AOV in the 3d viewport */
           data.renderPassAOVActive = stl->g_data->aov_name_hash;
-          GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[0], &data);
+          if (sldata->renderpass_ubo.aovs[0]) {
+            GPU_uniformbuf_update(sldata->renderpass_ubo.aovs[0], &data);
+          }
+          else {
+            sldata->renderpass_ubo.aovs[0] = GPU_uniformbuf_create_ex(
+                sizeof(data), &data, "renderpass_ubo.aovs");
+          }
           g_data->num_aovs_used = 1;
         }
+      }
+      /* Free AOV UBO's that are not in use. */
+      for (int aov_index = g_data->num_aovs_used; aov_index < MAX_AOVS; aov_index++) {
+        DRW_UBO_FREE_SAFE(sldata->renderpass_ubo.aovs[aov_index]);
       }
     }
 
@@ -1060,6 +1071,10 @@ void EEVEE_material_output_accumulate(EEVEE_ViewLayerData *sldata, EEVEE_Data *v
                                        txl->aov_surface_accum[aov_index],
                                        sldata->renderpass_ubo.aovs[aov_index]);
       }
+    }
+    /* Free unused aov textures. */
+    for (int aov_index = pd->num_aovs_used; aov_index < MAX_AOVS; aov_index++) {
+      DRW_TEXTURE_FREE_SAFE(txl->aov_surface_accum[aov_index]);
     }
 
     /* Restore default. */
