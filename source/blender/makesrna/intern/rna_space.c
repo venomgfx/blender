@@ -1388,9 +1388,6 @@ static void rna_3DViewShading_render_pass_set(PointerRNA *ptr, int value)
     shading->render_pass = EEVEE_RENDER_PASS_AOV;
     BLI_strncpy(shading->aov_name, aov->name, sizeof(aov->name));
   }
-  else if (value == EEVEE_RENDER_PASS_AO && ((scene->eevee.flag & SCE_EEVEE_GTAO_ENABLED) == 0)) {
-    shading->render_pass = EEVEE_RENDER_PASS_COMBINED;
-  }
   else if (value == EEVEE_RENDER_PASS_BLOOM &&
            ((scene->eevee.flag & SCE_EEVEE_BLOOM_ENABLED) == 0)) {
     shading->render_pass = EEVEE_RENDER_PASS_COMBINED;
