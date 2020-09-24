@@ -582,6 +582,7 @@ static char *code_generate_fragment(GPUMaterial *material,
   codegen_declare_tmps(ds, graph);
   codegen_call_functions(ds, graph);
 
+  BLI_dynstr_append(ds, "\t#ifndef VOLUMETRICS\n");
   BLI_dynstr_append(ds, "\tif (renderPassAOV) {\n");
   bool first_aov = true;
   LISTBASE_FOREACH (GPUNodeGraphOutputLink *, aovlink, &graph->outlink_aovs) {
@@ -594,8 +595,13 @@ static char *code_generate_fragment(GPUMaterial *material,
     codegen_final_output(ds, aovlink->outlink->output);
     BLI_dynstr_append(ds, "\t\t}\n");
   }
-  BLI_dynstr_append(ds, "\t\treturn CLOSURE_DEFAULT;\n");
-  BLI_dynstr_append(ds, "\t} else {\n\t\t");
+  BLI_dynstr_append(ds, "\t\tClosure no_aov = CLOSURE_DEFAULT;\n");
+  BLI_dynstr_append(ds, "\t\tno_aov.holdout = 1.0;\n");
+  BLI_dynstr_append(ds, "\t\treturn no_aov;\n");
+  BLI_dynstr_append(ds, "\t} else {\n");
+  BLI_dynstr_append(ds, "\t#else /* VOLUMETRICS */\n");
+  BLI_dynstr_append(ds, "\t{\n");
+  BLI_dynstr_append(ds, "\t#endif /* VOLUMETRICS */\n\t\t");
   codegen_final_output(ds, graph->outlink->output);
   BLI_dynstr_append(ds, "\t}\n");
 
