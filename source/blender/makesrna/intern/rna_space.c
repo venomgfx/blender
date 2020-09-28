@@ -1311,7 +1311,7 @@ static const EnumPropertyItem *rna_3DViewShading_render_pass_itemf(bContext *C,
   ViewLayer *view_layer = CTX_data_view_layer(C);
 
   const bool bloom_enabled = scene->eevee.flag & SCE_EEVEE_BLOOM_ENABLED;
-  const bool aov_available = !BLI_listbase_is_empty(&view_layer->aovs);
+  const bool aov_available = BKE_view_layer_has_valid_aov(view_layer);
 
   int totitem = 0;
   EnumPropertyItem *result = NULL;
@@ -1323,6 +1323,9 @@ static const EnumPropertyItem *rna_3DViewShading_render_pass_itemf(bContext *C,
       aov_template.icon = 0;
       aov_template.description = item->description;
       LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+        if ((aov->flag & AOV_CONFLICT) != 0) {
+          continue;
+        }
         aov_template.name = aov->name;
         aov_template.identifier = aov->name;
         RNA_enum_item_add(&result, &totitem, &aov_template);

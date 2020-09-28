@@ -285,6 +285,9 @@ void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
           ViewLayer *view_layer = draw_ctx->view_layer;
           int aov_index = 0;
           LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+            if ((aov->flag & AOV_CONFLICT) != 0) {
+              continue;
+            }
             if (aov_index == MAX_AOVS) {
               break;
             }

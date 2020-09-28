@@ -454,12 +454,17 @@ RenderResult *render_result_new(Render *re,
         RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_VOLUME_TRANSMITTANCE, view, "RGB");
       }
       LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+        if ((aov->flag & AOV_CONFLICT) != 0) {
+          continue;
+        }
         switch (aov->type) {
           case AOV_TYPE_COLOR:
             RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 4, aov->name, view, "RGBA");
             break;
           case AOV_TYPE_VALUE:
             RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 1, aov->name, view, "X");
+            break;
+          default:
             break;
         }
       }

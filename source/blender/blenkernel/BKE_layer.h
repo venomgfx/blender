@@ -437,6 +437,7 @@ void BKE_view_layer_set_active_aov(struct ViewLayer *view_layer, struct ViewLaye
 void BKE_view_layer_verify_aov(struct RenderEngine *engine,
                                struct Scene *scene,
                                struct ViewLayer *view_layer);
+bool BKE_view_layer_has_valid_aov(struct ViewLayer *view_layer);
 ViewLayer *BKE_view_layer_find_with_aov(struct Scene *scene, struct ViewLayerAOV *view_layer_aov);
 
 #ifdef __cplusplus

@@ -473,6 +473,9 @@ static void eevee_render_result_aovs(RenderLayer *rl,
     ViewLayer *view_layer = draw_ctx->view_layer;
     int aov_index = 0;
     LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+      if ((aov->flag & AOV_CONFLICT) != 0) {
+        continue;
+      }
       EEVEE_renderpasses_postprocess(sldata, vedata, EEVEE_RENDER_PASS_AOV, aov_index);
       switch (aov->type) {
         case AOV_TYPE_COLOR:
@@ -708,7 +711,7 @@ void EEVEE_render_update_passes(RenderEngine *engine, Scene *scene, ViewLayer *v
         RE_engine_register_pass(engine, scene, view_layer, aov->name, 3, "RGB", SOCK_RGBA);
         break;
       case AOV_TYPE_VALUE:
-        RE_engine_register_pass(engine, scene, view_layer, aov->name, 1, "R", SOCK_FLOAT);
+        RE_engine_register_pass(engine, scene, view_layer, aov->name, 1, "X", SOCK_FLOAT);
         break;
       default:
         break;

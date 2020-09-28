@@ -1942,6 +1942,17 @@ void BKE_view_layer_verify_aov(struct RenderEngine *engine,
   BLI_ghash_free(name_count, MEM_freeN, NULL);
 }
 
+/* Check if the given view layer has at least one valid AOV. */
+bool BKE_view_layer_has_valid_aov(ViewLayer *view_layer)
+{
+  LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+    if ((aov->flag & AOV_CONFLICT) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ViewLayer *BKE_view_layer_find_with_aov(struct Scene *scene, struct ViewLayerAOV *aov)
 {
   LISTBASE_FOREACH (ViewLayer *, view_layer, &scene->view_layers) {
