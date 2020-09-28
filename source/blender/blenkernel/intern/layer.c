@@ -1877,6 +1877,7 @@ struct ViewLayerAOV *BKE_view_layer_add_aov(struct ViewLayer *view_layer)
 {
   ViewLayerAOV *aov;
   aov = MEM_callocN(sizeof(ViewLayerAOV), __func__);
+  aov->type = AOV_TYPE_COLOR;
   BLI_addtail(&view_layer->aovs, aov);
   BLI_strncpy(aov->name, "AOV", 64);
   viewlayer_aov_active_set(view_layer, aov);
