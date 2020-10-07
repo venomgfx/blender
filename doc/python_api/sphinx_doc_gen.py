@@ -1551,7 +1551,7 @@ def pyrna2sphinx(basepath):
                     if not rna_info.rna_id_ignore(s.identifier)
                 ]
                 if subclass_ids:
-                    fw("subclasses --- \n" + ", ".join((":class:`%s`" % struct_module_name, s) for s in sorted(subclass_ids)) + "\n\n")
+                    fw("subclasses --- \n" + ", ".join((":class:`%s.%s`" % (class_module_name, s)) for s in sorted(subclass_ids)) + "\n\n")
 
             fw(".. class:: %s\n\n" % class_name)
             fw("   %s\n\n" % descr_str)
