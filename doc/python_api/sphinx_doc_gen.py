@@ -1328,7 +1328,7 @@ def pyrna2sphinx(basepath):
             else:
                 fw("base class --- ")
 
-            fw(", ".join((":class:`%s`" % base_id) for base_id in base_ids))
+            fw(", ".join((":class:`%s.%s`" % (struct_module_name, base_id)) for base_id in base_ids))
             fw("\n\n")
 
         subclass_ids = [
@@ -1338,7 +1338,7 @@ def pyrna2sphinx(basepath):
         ]
         subclass_ids.sort()
         if subclass_ids:
-            fw("subclasses --- \n" + ", ".join((":class:`%s`" % s) for s in subclass_ids) + "\n\n")
+            fw("subclasses --- \n" + ", ".join((":class:`%s.%s`" % (struct_module_name, s)) for s in subclass_ids) + "\n\n")
 
         base_id = getattr(struct.base, "identifier", "")
 
@@ -1455,14 +1455,14 @@ def pyrna2sphinx(basepath):
             if _BPY_STRUCT_FAKE:
                 for key, descr in descr_items:
                     if type(descr) == GetSetDescriptorType:
-                        lines.append("   * :class:`%s.%s`\n" % (_BPY_STRUCT_FAKE, key))
+                        lines.append("   * :class:`%s.%s <%s.%s.%s>`\n" % (_BPY_STRUCT_FAKE, key, struct_module_name, _BPY_STRUCT_FAKE, key))
 
             for base in bases:
                 for prop in base.properties:
-                    lines.append("   * :class:`%s.%s`\n" % (base.identifier, prop.identifier))
+                    lines.append("   * :class`%s.%s. <%s.%s.%s>`\n" % (base.identifier, prop.identifier, struct_module_name, base.identifier, prop.identifier))
 
                 for identifier, py_prop in base.get_py_properties():
-                    lines.append("   * :class:`%s.%s`\n" % (base.identifier, identifier))
+                    lines.append("   * :class:`%s.%s <%s.%s.%s>`\n" % (base.identifier, identifier, struct_module_name, base.identifier, identifier))
 
             if lines:
                 fw(".. rubric:: Inherited Properties\n\n")
@@ -1480,15 +1480,15 @@ def pyrna2sphinx(basepath):
             if _BPY_STRUCT_FAKE:
                 for key, descr in descr_items:
                     if type(descr) == MethodDescriptorType:
-                        lines.append("   * :class:`%s.%s`\n" % (_BPY_STRUCT_FAKE, key))
+                        lines.append("   * :class:`%s.%s <%s.%s.%s>`\n" % (_BPY_STRUCT_FAKE, key, struct_module_name, _BPY_STRUCT_FAKE, key))
 
             for base in bases:
                 for func in base.functions:
                     lines.append("   * :class:`%s.%s`\n" % (base.identifier, func.identifier))
                 for identifier, py_func in base.get_py_functions():
-                    lines.append("   * :class:`%s.%s`\n" % (base.identifier, identifier))
+                    lines.append("   * :class:`%s.%s <%s.%s.%s>`\n" % (base.identifier, identifier, struct_module_name, base.identifier, identifier))
                 for identifier, py_func in base.get_py_c_functions():
-                    lines.append("   * :class:`%s.%s`\n" % (base.identifier, identifier))
+                    lines.append("   * :class:`%s.%s <%s.%s.%s>`\n" % (base.identifier, identifier, struct_module_name, base.identifier, identifier))
 
             if lines:
                 fw(".. rubric:: Inherited Functions\n\n")
@@ -1520,7 +1520,7 @@ def pyrna2sphinx(basepath):
                 ref_split = ref.split(".")
                 if len(ref_split) > 2:
                     ref = ref_split[-2] + "." + ref_split[-1]
-                fw("   * :class:`%s`\n" % ref)
+                fw("   * :class:`%s.%s`\n" % (struct_module_name, ref))
             fw("\n")
 
         # docs last?, disable for now
@@ -1551,7 +1551,7 @@ def pyrna2sphinx(basepath):
                     if not rna_info.rna_id_ignore(s.identifier)
                 ]
                 if subclass_ids:
-                    fw("subclasses --- \n" + ", ".join((":class:`%s`" % s) for s in sorted(subclass_ids)) + "\n\n")
+                    fw("subclasses --- \n" + ", ".join((":class:`%s`" % struct_module_name, s) for s in sorted(subclass_ids)) + "\n\n")
 
             fw(".. class:: %s\n\n" % class_name)
             fw("   %s\n\n" % descr_str)
