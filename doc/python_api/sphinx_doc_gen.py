@@ -1312,8 +1312,6 @@ def pyrna2sphinx(basepath):
 
         fw(title_string(title, "="))
 
-        fw(".. module:: %s\n\n" % struct_module_name)
-
         # docs first?, ok
         write_example_ref("", fw, "%s.%s" % (struct_module_name, struct_id))
 
@@ -1349,9 +1347,9 @@ def pyrna2sphinx(basepath):
                 base_id = _BPY_STRUCT_FAKE
 
         if base_id:
-            fw(".. class:: %s(%s)\n\n" % (struct_id, base_id))
+            fw(".. class:: %s.%s(%s)\n\n" % (struct_module_name, struct_id, base_id))
         else:
-            fw(".. class:: %s\n\n" % struct_id)
+            fw(".. class:: %s.%s\n\n" % (struct_module_name, struct_id))
 
         fw("   %s\n\n" % struct.description)
 
@@ -1611,13 +1609,13 @@ def pyrna2sphinx(basepath):
 
             fw(title_string(title, "="))
 
-            fw(".. module:: bpy.ops.%s\n\n" % op_module_name)
+            fw(".. class:: bpy.ops.%s\n\n" % op_module_name)
 
             ops_mod.sort(key=lambda op: op.func_name)
 
             for op in ops_mod:
                 args_str = ", ".join(prop.get_arg_default(force=True) for prop in op.args)
-                fw(".. function:: %s(%s)\n\n" % (op.func_name, args_str))
+                fw("   .. function:: %s(%s)\n\n" % (op.func_name, args_str))
 
                 # if the description isn't valid, we output the standard warning
                 # with a link to the wiki so that people can help
@@ -1626,9 +1624,9 @@ def pyrna2sphinx(basepath):
                 else:
                     operator_description = op.description
 
-                fw("   %s\n\n" % operator_description)
+                fw("      %s\n\n" % operator_description)
                 for prop in op.args:
-                    write_param("   ", fw, prop)
+                    write_param("      ", fw, prop)
                 if op.args:
                     fw("\n")
 
@@ -1899,7 +1897,7 @@ def write_rst_data(basepath):
         file = open(filepath, "w", encoding="utf-8")
         fw = file.write
         fw(title_string("Data Access (bpy.data)", "="))
-        fw(".. module:: bpy\n")
+        fw(".. module:: bpy.data\n")
         fw("\n")
         fw("This module is used for all Blender/Python access.\n")
         fw("\n")
