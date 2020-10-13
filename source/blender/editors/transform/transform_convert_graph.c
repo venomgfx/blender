@@ -31,11 +31,14 @@
 #include "BKE_context.h"
 #include "BKE_fcurve.h"
 #include "BKE_nla.h"
+#include "BKE_object.h"
 #include "BKE_report.h"
 
 #include "ED_anim_api.h"
+#include "ED_armature.h"
 #include "ED_keyframes_edit.h"
 #include "ED_markers.h"
+#include "ED_object.h"
 
 #include "UI_view2d.h"
 
@@ -1023,6 +1026,9 @@ void recalcData_graphedit(TransInfo *t)
     remake_graph_transdata(t, &anim_data);
   }
 
+  /* Recalculate motion paths if objects have them. */
+  ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CURRENT_FRAME);
+
   /* now free temp channels */
   ANIM_animdata_freelist(&anim_data);
 }
@@ -1077,6 +1083,9 @@ void special_aftertrans_update__graph(bContext *C, TransInfo *t)
         }
       }
     }
+
+    /* Recalculate motion paths if objects have them. */
+    ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CHANGED);
 
     /* free temp memory */
     ANIM_animdata_freelist(&anim_data);

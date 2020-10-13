@@ -31,9 +31,12 @@
 
 #include "BKE_context.h"
 #include "BKE_nla.h"
+#include "BKE_object.h"
 
 #include "ED_anim_api.h"
+#include "ED_armature.h"
 #include "ED_markers.h"
+#include "ED_object.h"
 
 #include "WM_api.h"
 
@@ -511,6 +514,9 @@ void recalcData_nla(TransInfo *t)
       }
     }
   }
+
+  /* Recalculate motion paths if objects have them. */
+  ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CURRENT_FRAME);
 }
 
 /** \} */
@@ -519,7 +525,7 @@ void recalcData_nla(TransInfo *t)
 /** \name Special After Transform NLA
  * \{ */
 
-void special_aftertrans_update__nla(bContext *C, TransInfo *UNUSED(t))
+void special_aftertrans_update__nla(bContext *C, TransInfo *t)
 {
   bAnimContext ac;
 
@@ -545,6 +551,9 @@ void special_aftertrans_update__nla(bContext *C, TransInfo *UNUSED(t))
       /* remove the temp metas */
       BKE_nlastrips_clear_metas(&nlt->strips, 0, 1);
     }
+
+    /* Recalculate motion paths if objects have them. */
+    ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CHANGED);
 
     /* free temp memory */
     ANIM_animdata_freelist(&anim_data);

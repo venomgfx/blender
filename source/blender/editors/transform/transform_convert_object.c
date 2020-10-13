@@ -40,6 +40,7 @@
 #include "BKE_rigidbody.h"
 #include "BKE_scene.h"
 
+#include "ED_armature.h"
 #include "ED_keyframing.h"
 #include "ED_object.h"
 
@@ -972,6 +973,10 @@ void recalcData_objects(TransInfo *t)
   if (motionpath_update) {
     /* Update motion paths once for all transformed objects. */
     ED_objects_recalculate_paths(t->context, t->scene, OBJECT_PATH_CALC_RANGE_CURRENT_FRAME);
+    Object *ob = BKE_object_pose_armature_get(CTX_data_active_object(t->context));
+    if (ob) {
+      ED_pose_recalculate_paths(t->context, t->scene, ob, POSE_PATH_CALC_RANGE_CURRENT_FRAME);
+    }
   }
 
   if (t->options & CTX_OBMODE_XFORM_SKIP_CHILDREN) {
@@ -1056,6 +1061,12 @@ void special_aftertrans_update__object(bContext *C, TransInfo *t)
     const eObjectPathCalcRange range = canceled ? OBJECT_PATH_CALC_RANGE_CURRENT_FRAME :
                                                   OBJECT_PATH_CALC_RANGE_CHANGED;
     ED_objects_recalculate_paths(C, t->scene, range);
+    ob = BKE_object_pose_armature_get(CTX_data_active_object(t->context));
+    if (ob) {
+      const eObjectPathCalcRange pose_range = canceled ? POSE_PATH_CALC_RANGE_CURRENT_FRAME :
+                                                         POSE_PATH_CALC_RANGE_CHANGED;
+      ED_pose_recalculate_paths(t->context, t->scene, ob, pose_range);
+    }
   }
 
   clear_trans_object_base_flags(t);

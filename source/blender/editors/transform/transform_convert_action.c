@@ -36,10 +36,13 @@
 #include "BKE_key.h"
 #include "BKE_mask.h"
 #include "BKE_nla.h"
+#include "BKE_object.h"
 
 #include "ED_anim_api.h"
+#include "ED_armature.h"
 #include "ED_keyframes_edit.h"
 #include "ED_markers.h"
+#include "ED_object.h"
 
 #include "WM_api.h"
 #include "WM_types.h"
@@ -618,6 +621,9 @@ void recalcData_actedit(TransInfo *t)
     /* now free temp channels */
     ANIM_animdata_freelist(&anim_data);
   }
+
+  /* Recalculate motion paths if objects have them. */
+  ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CURRENT_FRAME);
 }
 
 /** \} */
@@ -909,6 +915,9 @@ void special_aftertrans_update__actedit(bContext *C, TransInfo *t)
   if (!ELEM(ac.datatype, ANIMCONT_GPENCIL)) {
     ANIM_editkeyframes_refresh(&ac);
   }
+
+  /* Recalculate motion paths if objects have them. */
+  ED_objects_and_pose_recalculate_paths(t->context, t->scene, ANIMVIZ_CALC_RANGE_CHANGED);
 
   /* clear flag that was set for time-slide drawing */
   saction->flag &= ~SACTION_MOVING;

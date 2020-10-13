@@ -1020,7 +1020,7 @@ void OBJECT_OT_forcefield_toggle(wmOperatorType *ot)
 /** \name Calculate Motion Paths Operator
  * \{ */
 
-static eAnimvizCalcRange object_path_convert_range(eObjectPathCalcRange range)
+static eAnimvizCalcRange path_convert_object_to_animviz_range(eObjectPathCalcRange range)
 {
   switch (range) {
     case OBJECT_PATH_CALC_RANGE_CURRENT_FRAME:
@@ -1031,6 +1031,32 @@ static eAnimvizCalcRange object_path_convert_range(eObjectPathCalcRange range)
       return ANIMVIZ_CALC_RANGE_FULL;
   }
   return ANIMVIZ_CALC_RANGE_FULL;
+}
+
+static eObjectPathCalcRange path_convert_animviz_to_object_range(eAnimvizCalcRange range)
+{
+  switch (range) {
+    case ANIMVIZ_CALC_RANGE_CURRENT_FRAME:
+      return OBJECT_PATH_CALC_RANGE_CURRENT_FRAME;
+    case ANIMVIZ_CALC_RANGE_CHANGED:
+      return OBJECT_PATH_CALC_RANGE_CHANGED;
+    case ANIMVIZ_CALC_RANGE_FULL:
+      return OBJECT_PATH_CALC_RANGE_FULL;
+  }
+  return OBJECT_PATH_CALC_RANGE_FULL;
+}
+
+static ePosePathCalcRange path_convert_animviz_to_pose_range(eAnimvizCalcRange range)
+{
+  switch (range) {
+    case ANIMVIZ_CALC_RANGE_CURRENT_FRAME:
+      return POSE_PATH_CALC_RANGE_CURRENT_FRAME;
+    case ANIMVIZ_CALC_RANGE_CHANGED:
+      return POSE_PATH_CALC_RANGE_CHANGED;
+    case ANIMVIZ_CALC_RANGE_FULL:
+      return POSE_PATH_CALC_RANGE_FULL;
+  }
+  return POSE_PATH_CALC_RANGE_FULL;
 }
 
 /* For the objects with animation: update paths for those that have got them
@@ -1074,7 +1100,7 @@ void ED_objects_recalculate_paths(bContext *C, Scene *scene, eObjectPathCalcRang
 
   /* recalculate paths, then free */
   animviz_calc_motionpaths(
-      depsgraph, bmain, scene, &targets, object_path_convert_range(range), true);
+      depsgraph, bmain, scene, &targets, path_convert_object_to_animviz_range(range), true);
   BLI_freelistN(&targets);
 
   if (range != OBJECT_PATH_CALC_RANGE_CURRENT_FRAME) {
@@ -1092,6 +1118,29 @@ void ED_objects_recalculate_paths(bContext *C, Scene *scene, eObjectPathCalcRang
   if (free_depsgraph) {
     DEG_graph_free(depsgraph);
   }
+}
+
+/* Combines ED_objects_recalculate_paths and ED_pose_recalculate_paths in a single function.
+ * Useful for updates from tools that may change a lot of animation data at once (e.g. time line,
+ * graph editor)
+ */
+void ED_objects_and_pose_recalculate_paths(bContext *C,
+                                           Scene *scene,
+                                           eAnimvizCalcRange animviz_range)
+{
+  eObjectPathCalcRange object_range = path_convert_animviz_to_object_range(animviz_range);
+  ePosePathCalcRange pose_range = path_convert_animviz_to_pose_range(animviz_range);
+
+  ED_objects_recalculate_paths(C, scene, object_range);
+
+  /* Loop over objects in the scene. */
+  CTX_DATA_BEGIN (C, Object *, ob, selected_editable_objects) {
+    /* If they have pose data, update their bones' motion paths. */
+    if (ob->pose) {
+      ED_pose_recalculate_paths(C, scene, ob, pose_range);
+    }
+  }
+  CTX_DATA_END;
 }
 
 /* show popup to determine settings */

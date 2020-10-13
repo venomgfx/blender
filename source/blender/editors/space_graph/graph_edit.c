@@ -50,6 +50,7 @@
 #include "BKE_fcurve.h"
 #include "BKE_global.h"
 #include "BKE_nla.h"
+#include "BKE_object.h"
 #include "BKE_report.h"
 
 #include "DEG_depsgraph_build.h"
@@ -58,10 +59,12 @@
 #include "UI_view2d.h"
 
 #include "ED_anim_api.h"
+#include "ED_armature.h"
 #include "ED_keyframes_edit.h"
 #include "ED_keyframing.h"
 #include "ED_markers.h"
 #include "ED_numinput.h"
+#include "ED_object.h"
 #include "ED_screen.h"
 #include "ED_transform.h"
 
@@ -2271,6 +2274,10 @@ static int graphkeys_expo_exec(bContext *C, wmOperator *op)
   /* set notifier that keyframe properties have changed */
   WM_event_add_notifier(C, NC_ANIMATION | ND_KEYFRAME_PROP, NULL);
 
+  /* Recalculate motion paths if objects have them. */
+  Scene *scene = CTX_data_scene(C);
+  ED_objects_and_pose_recalculate_paths(C, scene, ANIMVIZ_CALC_RANGE_CHANGED);
+
   return OPERATOR_FINISHED;
 }
 
@@ -2343,6 +2350,10 @@ static int graphkeys_ipo_exec(bContext *C, wmOperator *op)
   /* set notifier that keyframe properties have changed */
   WM_event_add_notifier(C, NC_ANIMATION | ND_KEYFRAME_PROP, NULL);
 
+  /* Recalculate motion paths if objects have them. */
+  Scene *scene = CTX_data_scene(C);
+  ED_objects_and_pose_recalculate_paths(C, scene, ANIMVIZ_CALC_RANGE_CHANGED);
+
   return OPERATOR_FINISHED;
 }
 
@@ -2413,6 +2424,10 @@ static int graphkeys_easing_exec(bContext *C, wmOperator *op)
 
   /* set notifier that keyframe properties have changed */
   WM_event_add_notifier(C, NC_ANIMATION | ND_KEYFRAME_PROP, NULL);
+
+  /* Recalculate motion paths if objects have them. */
+  Scene *scene = CTX_data_scene(C);
+  ED_objects_and_pose_recalculate_paths(C, scene, ANIMVIZ_CALC_RANGE_CHANGED);
 
   return OPERATOR_FINISHED;
 }
@@ -2494,6 +2509,10 @@ static int graphkeys_handletype_exec(bContext *C, wmOperator *op)
 
   /* set notifier that keyframe properties have changed */
   WM_event_add_notifier(C, NC_ANIMATION | ND_KEYFRAME_PROP, NULL);
+
+  /* Recalculate motion paths if objects have them. */
+  Scene *scene = CTX_data_scene(C);
+  ED_objects_and_pose_recalculate_paths(C, scene, ANIMVIZ_CALC_RANGE_CHANGED);
 
   return OPERATOR_FINISHED;
 }

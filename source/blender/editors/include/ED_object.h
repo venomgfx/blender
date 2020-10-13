@@ -25,6 +25,7 @@
 
 #include "BLI_compiler_attrs.h"
 #include "DNA_object_enums.h"
+#include "ED_anim_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,10 +63,11 @@ struct Object *ED_object_context(const struct bContext *C);
 struct Object *ED_object_active_context(const struct bContext *C);
 void ED_collection_hide_menu_draw(const struct bContext *C, struct uiLayout *layout);
 
-Object **ED_object_array_in_mode_or_selected(struct bContext *C,
-                                             bool (*filter_fn)(struct Object *ob, void *user_data),
-                                             void *filter_user_data,
-                                             uint *r_objects_len);
+struct Object **ED_object_array_in_mode_or_selected(struct bContext *C,
+                                                    bool (*filter_fn)(struct Object *ob,
+                                                                      void *user_data),
+                                                    void *filter_user_data,
+                                                    uint *r_objects_len);
 
 /* object_utils.c */
 bool ED_object_calc_active_center_for_editmode(struct Object *obedit,
@@ -229,18 +231,22 @@ void ED_object_vpaintmode_exit(struct bContext *C);
 void ED_object_wpaintmode_exit_ex(struct Object *ob);
 void ED_object_wpaintmode_exit(struct bContext *C);
 
-void ED_object_texture_paint_mode_enter_ex(struct Main *bmain, struct Scene *scene, Object *ob);
+void ED_object_texture_paint_mode_enter_ex(struct Main *bmain,
+                                           struct Scene *scene,
+                                           struct Object *ob);
 void ED_object_texture_paint_mode_enter(struct bContext *C);
 
-void ED_object_texture_paint_mode_exit_ex(struct Main *bmain, struct Scene *scene, Object *ob);
+void ED_object_texture_paint_mode_exit_ex(struct Main *bmain,
+                                          struct Scene *scene,
+                                          struct Object *ob);
 void ED_object_texture_paint_mode_exit(struct bContext *C);
 
 void ED_object_particle_edit_mode_enter_ex(struct Depsgraph *depsgraph,
                                            struct Scene *scene,
-                                           Object *ob);
+                                           struct Object *ob);
 void ED_object_particle_edit_mode_enter(struct bContext *C);
 
-void ED_object_particle_edit_mode_exit_ex(struct Scene *scene, Object *ob);
+void ED_object_particle_edit_mode_exit_ex(struct Scene *scene, struct Object *ob);
 void ED_object_particle_edit_mode_exit(struct bContext *C);
 
 void ED_object_sculptmode_enter_ex(struct Main *bmain,
@@ -321,6 +327,9 @@ typedef enum eObjectPathCalcRange {
 void ED_objects_recalculate_paths(struct bContext *C,
                                   struct Scene *scene,
                                   eObjectPathCalcRange range);
+void ED_objects_and_pose_recalculate_paths(struct bContext *C,
+                                           struct Scene *scene,
+                                           enum eAnimvizCalcRange animviz_range);
 
 /* constraints */
 struct ListBase *ED_object_constraint_active_list(struct Object *ob);
