@@ -1788,7 +1788,7 @@ void rna_ViewLayer_pass_update(Main *bmain, Scene *activescene, PointerRNA *ptr)
   if (ptr->type == &RNA_ViewLayer) {
     view_layer = (ViewLayer *)ptr->data;
   }
-  else if (ptr->type == &RNA_ViewLayerAOV) {
+  else if (ptr->type == &RNA_AOV) {
     ViewLayerAOV *aov = (ViewLayerAOV *)ptr->data;
     view_layer = BKE_view_layer_find_with_aov(scene, aov);
   }
@@ -4004,7 +4004,8 @@ static void rna_def_view_layer_aov(BlenderRNA *brna)
 {
   StructRNA *srna;
   PropertyRNA *prop;
-  srna = RNA_def_struct(brna, "ViewLayerAOV", NULL);
+  srna = RNA_def_struct(brna, "AOV", NULL);
+  RNA_def_struct_sdna(srna, "ViewLayerAOV");
   RNA_def_struct_ui_text(srna, "Shader AOV", "");
 
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
@@ -4079,11 +4080,11 @@ void rna_def_view_layer_common(StructRNA *srna, const bool scene)
 
     prop = RNA_def_property(srna, "aovs", PROP_COLLECTION, PROP_NONE);
     RNA_def_property_collection_sdna(prop, NULL, "aovs", NULL);
-    RNA_def_property_struct_type(prop, "ViewLayerAOV");
+    RNA_def_property_struct_type(prop, "AOV");
     RNA_def_property_ui_text(prop, "Shader AOV", "");
 
     prop = RNA_def_property(srna, "active_aov", PROP_POINTER, PROP_NONE);
-    RNA_def_property_struct_type(prop, "ViewLayerAOV");
+    RNA_def_property_struct_type(prop, "AOV");
     RNA_def_property_clear_flag(prop, PROP_EDITABLE);
     RNA_def_property_ui_text(prop, "Shader AOV", "Active AOV");
 
