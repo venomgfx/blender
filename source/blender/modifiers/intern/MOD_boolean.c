@@ -35,6 +35,7 @@
 #include "BLT_translation.h"
 
 #include "DNA_collection_types.h"
+#include "DNA_defaults.h"
 #include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
 #include "DNA_object_types.h"
@@ -79,10 +80,9 @@ static void initData(ModifierData *md)
 {
   BooleanModifierData *bmd = (BooleanModifierData *)md;
 
-  bmd->double_threshold = 1e-6f;
-  bmd->operation = eBooleanModifierOp_Difference;
-  bmd->solver = eBooleanModifierSolver_Exact;
-  bmd->flag = eBooleanModifierFlag_Object;
+  BLI_assert(MEMCMP_STRUCT_AFTER_IS_ZERO(bmd, modifier));
+
+  MEMCPY_STRUCT_AFTER(bmd, DNA_struct_default_get(BooleanModifierData), modifier);
 }
 
 static bool isDisabled(const struct Scene *UNUSED(scene),
@@ -96,16 +96,10 @@ static bool isDisabled(const struct Scene *UNUSED(scene),
     return !bmd->object || bmd->object->type != OB_MESH;
   }
   if (bmd->flag & eBooleanModifierFlag_Collection) {
-    return !col;
+    /* The Exact solver tolerates an empty collection. */
+    return !col && bmd->solver != eBooleanModifierSolver_Exact;
   }
   return false;
-}
-
-static void foreachObjectLink(ModifierData *md, Object *ob, ObjectWalkFunc walk, void *userData)
-{
-  BooleanModifierData *bmd = (BooleanModifierData *)md;
-
-  walk(userData, ob, &bmd->object, IDWALK_CB_NOP);
 }
 
 static void foreachIDLink(ModifierData *md, Object *ob, IDWalkFunc walk, void *userData)
@@ -113,9 +107,7 @@ static void foreachIDLink(ModifierData *md, Object *ob, IDWalkFunc walk, void *u
   BooleanModifierData *bmd = (BooleanModifierData *)md;
 
   walk(userData, ob, (ID **)&bmd->collection, IDWALK_CB_NOP);
-
-  /* Needed for the object operand to work. */
-  foreachObjectLink(md, ob, (ObjectWalkFunc)walk, userData);
+  walk(userData, ob, (ID **)&bmd->object, IDWALK_CB_NOP);
 }
 
 static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphContext *ctx)
@@ -157,7 +149,7 @@ static Mesh *get_quick_mesh(
           result = mesh_self;
         }
         else {
-          BKE_id_copy_ex(NULL, &mesh_operand_ob->id, (ID **)&result, LIB_ID_COPY_LOCALIZE);
+          result = (Mesh *)BKE_id_copy_ex(NULL, &mesh_operand_ob->id, NULL, LIB_ID_COPY_LOCALIZE);
 
           float imat[4][4];
           float omat[4][4];
@@ -435,22 +427,25 @@ static Mesh *collection_boolean_exact(BooleanModifierData *bmd,
   BLI_array_append(meshes, mesh);
   BLI_array_append(objects, ctx->object);
   Mesh *col_mesh;
-  FOREACH_COLLECTION_OBJECT_RECURSIVE_BEGIN (col, ob) {
-    if (ob->type == OB_MESH && ob != ctx->object) {
-      col_mesh = BKE_modifier_get_evaluated_mesh_from_evaluated_object(ob, false);
-      /* XXX This is utterly non-optimal, we may go from a bmesh to a mesh back to a bmesh!
-       * But for 2.90 better not try to be smart here. */
-      BKE_mesh_wrapper_ensure_mdata(col_mesh);
-      BLI_array_append(meshes, col_mesh);
-      BLI_array_append(objects, ob);
-      bat.totvert += col_mesh->totvert;
-      bat.totedge += col_mesh->totedge;
-      bat.totloop += col_mesh->totloop;
-      bat.totface += col_mesh->totpoly;
-      ++num_shapes;
+  /* Allow col to be empty: then target mesh will just remove self-intersections. */
+  if (col) {
+    FOREACH_COLLECTION_OBJECT_RECURSIVE_BEGIN (col, ob) {
+      if (ob->type == OB_MESH && ob != ctx->object) {
+        col_mesh = BKE_modifier_get_evaluated_mesh_from_evaluated_object(ob, false);
+        /* XXX This is utterly non-optimal, we may go from a bmesh to a mesh back to a bmesh!
+         * But for 2.90 better not try to be smart here. */
+        BKE_mesh_wrapper_ensure_mdata(col_mesh);
+        BLI_array_append(meshes, col_mesh);
+        BLI_array_append(objects, ob);
+        bat.totvert += col_mesh->totvert;
+        bat.totedge += col_mesh->totedge;
+        bat.totloop += col_mesh->totloop;
+        bat.totface += col_mesh->totpoly;
+        ++num_shapes;
+      }
     }
+    FOREACH_COLLECTION_OBJECT_RECURSIVE_END;
   }
-  FOREACH_COLLECTION_OBJECT_RECURSIVE_END;
   int *shape_face_end = MEM_mallocN(num_shapes * sizeof(int), __func__);
   int *shape_vert_end = MEM_mallocN(num_shapes * sizeof(int), __func__);
   bool is_neg_mat0 = is_negative_m4(ctx->object->obmat);
@@ -774,7 +769,6 @@ ModifierTypeInfo modifierType_Boolean = {
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ NULL,
-    /* foreachObjectLink */ foreachObjectLink,
     /* foreachIDLink */ foreachIDLink,
     /* foreachTexLink */ NULL,
     /* freeRuntimeData */ NULL,

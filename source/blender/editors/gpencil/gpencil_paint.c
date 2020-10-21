@@ -3232,7 +3232,7 @@ static tGPsdata *gpencil_stroke_begin(bContext *C, wmOperator *op)
   tGPsdata *p = op->customdata;
 
   /* we must check that we're still within the area that we're set up to work from
-   * otherwise we could crash (see bug #20586)
+   * otherwise we could crash (see bug T20586)
    */
   if (CTX_wm_area(C) != p->area) {
     printf("\t\t\tGP - wrong area execution abort!\n");
@@ -3471,8 +3471,7 @@ static void gpencil_add_fake_points(const wmEvent *event, tGPsdata *p)
                          (p->brush && (p->brush->gpencil_tool == GPAINT_TOOL_DRAW)));
 
   /* TODO: ensure sampling enough points when using circular guide,
-  but the arc must be around the center. (see if above to check other guides only)
-  */
+   * but the arc must be around the center. (see if above to check other guides only). */
   if (is_speed_guide && (guide->type == GP_GUIDE_CIRCULAR)) {
     input_samples = GP_MAX_INPUT_SAMPLES;
   }
@@ -3583,8 +3582,8 @@ static int gpencil_draw_modal(bContext *C, wmOperator *op, const wmEvent *event)
   if (ISKEYBOARD(event->type)) {
     if (ELEM(event->type, EVT_LEFTARROWKEY, EVT_DOWNARROWKEY, EVT_RIGHTARROWKEY, EVT_UPARROWKEY)) {
       /* allow some keys:
-       *   - for frame changing [#33412]
-       *   - for undo (during sketching sessions)
+       *   - For frame changing T33412.
+       *   - For undo (during sketching sessions).
        */
     }
     else if (event->type == EVT_ZKEY) {
@@ -3639,7 +3638,7 @@ static int gpencil_draw_modal(bContext *C, wmOperator *op, const wmEvent *event)
   /* toggle painting mode upon mouse-button movement
    * - LEFTMOUSE  = standard drawing (all) / straight line drawing (all)
    * - RIGHTMOUSE = eraser (all)
-   *   (Disabling RIGHTMOUSE case here results in bugs like [#32647])
+   *   (Disabling RIGHTMOUSE case here results in bugs like T32647)
    * also making sure we have a valid event value, to not exit too early
    */
   if (ELEM(event->type, LEFTMOUSE, RIGHTMOUSE) && (ELEM(event->val, KM_PRESS, KM_RELEASE))) {

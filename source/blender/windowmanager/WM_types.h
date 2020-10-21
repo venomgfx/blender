@@ -485,6 +485,8 @@ typedef struct wmGesture {
   /** optional, maximum amount of points stored. */
   int points_alloc;
   int modal_state;
+  /** optional, draw the active side of the straightline gesture. */
+  bool draw_active_side;
 
   /**
    * For modal operators which may be running idle, waiting for an event to activate the gesture.
@@ -496,6 +498,11 @@ typedef struct wmGesture {
   uint is_active_prev : 1;
   /** Use for gestures that support both immediate or delayed activation. */
   uint wait_for_input : 1;
+  /** Use for gestures that can be moved, like box selection */
+  uint move : 1;
+  /** For gestures that support snapping, stores if snapping is enabled using the modal keymap
+   * toggle. */
+  uint use_snap : 1;
 
   /**
    * customdata
@@ -820,6 +827,7 @@ typedef void (*wmPaintCursorDraw)(struct bContext *C, int, int, void *customdata
 #define WM_DRAG_NAME 3
 #define WM_DRAG_VALUE 4
 #define WM_DRAG_COLOR 5
+#define WM_DRAG_DATASTACK 6
 
 typedef enum wmDragFlags {
   WM_DRAG_NOP = 0,

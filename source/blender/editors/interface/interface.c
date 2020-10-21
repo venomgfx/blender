@@ -869,7 +869,7 @@ static bool ui_but_update_from_old_block(const bContext *C,
     }
 
     /* copy hardmin for list rows to prevent 'sticking' highlight to mouse position
-     * when scrolling without moving mouse (see [#28432]) */
+     * when scrolling without moving mouse (see T28432) */
     if (ELEM(oldbut->type, UI_BTYPE_ROW, UI_BTYPE_LISTROW)) {
       oldbut->hardmax = but->hardmax;
     }
@@ -1322,14 +1322,11 @@ static bool ui_but_event_property_operator_string(const bContext *C,
       opnames_len = ARRAY_SIZE(ctx_enum_opnames);
     }
   }
-
-  bool found = false;
-
   /* Don't use the button again. */
   but = NULL;
 
   if (prop == NULL) {
-    return NULL;
+    return false;
   }
 
   /* this version is only for finding hotkeys for properties
@@ -1414,6 +1411,7 @@ static bool ui_but_event_property_operator_string(const bContext *C,
   }
 
   /* we have a datapath! */
+  bool found = false;
   if (data_path || (prop_enum_value_ok && prop_enum_value_id)) {
     /* create a property to host the "datapath" property we're sending to the operators */
     IDProperty *prop_path;
@@ -2021,7 +2019,7 @@ void UI_block_draw(const bContext *C, uiBlock *block)
       ui_but_to_pixelrect(&rect, region, block, but);
 
       /* XXX: figure out why invalid coordinates happen when closing render window */
-      /* and material preview is redrawn in main window (temp fix for bug #23848) */
+      /* and material preview is redrawn in main window (temp fix for bug T23848) */
       if (rect.xmin < rect.xmax && rect.ymin < rect.ymax) {
         ui_draw_but(C, region, &style, but, &rect);
       }
@@ -2630,7 +2628,7 @@ static void ui_get_but_string_unit(
   int precision;
 
   if (unit->scale_length < 0.0001f) {
-    unit->scale_length = 1.0f;  // XXX do_versions
+    unit->scale_length = 1.0f; /* XXX do_versions */
   }
 
   /* Use precision override? */
@@ -2881,7 +2879,7 @@ char *ui_but_string_get_dynamic(uiBut *but, int *r_str_size)
 
 /**
  * Report a generic error prefix when evaluating a string with #BPY_run_string_as_number
- * as the Python error on it's own doesn't provide enough context.
+ * as the Python error on its own doesn't provide enough context.
  */
 #define UI_NUMBER_EVAL_ERROR_PREFIX IFACE_("Error evaluating number, see Info editor for details")
 
@@ -3123,23 +3121,6 @@ bool ui_but_string_set(bContext *C, uiBut *but, const char *str)
   }
 
   return false;
-}
-
-void ui_but_default_set(bContext *C, const bool all, const bool use_afterfunc)
-{
-  wmOperatorType *ot = WM_operatortype_find("UI_OT_reset_default_button", true);
-
-  if (use_afterfunc) {
-    PointerRNA *ptr = ui_handle_afterfunc_add_operator(ot, WM_OP_EXEC_DEFAULT, true);
-    RNA_boolean_set(ptr, "all", all);
-  }
-  else {
-    PointerRNA ptr;
-    WM_operator_properties_create_ptr(&ptr, ot);
-    RNA_boolean_set(&ptr, "all", all);
-    WM_operator_name_call_ptr(C, ot, WM_OP_EXEC_DEFAULT, &ptr);
-    WM_operator_properties_free(&ptr);
-  }
 }
 
 static double soft_range_round_up(double value, double max)
@@ -3394,6 +3375,8 @@ void UI_block_free(const bContext *C, uiBlock *block)
   BLI_freelistN(&block->saferct);
   BLI_freelistN(&block->color_pickers.list);
 
+  ui_block_free_button_groups(block);
+
   MEM_freeN(block);
 }
 
@@ -3474,6 +3457,8 @@ uiBlock *UI_block_begin(const bContext *C, ARegion *region, const char *name, ch
   block->active = 1;
   block->emboss = emboss;
   block->evil_C = (void *)C; /* XXX */
+
+  BLI_listbase_clear(&block->button_groups);
 
   if (scene) {
     /* store display device name, don't lookup for transformations yet
@@ -3661,7 +3646,7 @@ static void ui_but_update_ex(uiBut *but, const bool validate)
   }
 
   /* safety is 4 to enable small number buttons (like 'users') */
-  // okwidth = -4 + (BLI_rcti_size_x(&but->rect)); // UNUSED
+  // okwidth = -4 + (BLI_rcti_size_x(&but->rect)); /* UNUSED */
 
   /* name: */
   switch (but->type) {
@@ -3803,7 +3788,7 @@ void UI_block_align_begin(uiBlock *block)
   block->flag |= UI_BUT_ALIGN_DOWN;
   block->alignnr++;
 
-  /* buttons declared after this call will get this align nr */  // XXX flag?
+  /* buttons declared after this call will get this align nr */ /* XXX flag? */
 }
 
 void UI_block_align_end(uiBlock *block)
@@ -3946,7 +3931,7 @@ uiBut *ui_but_change_type(uiBut *but, eButType new_type)
       const bool found_layout = ui_layout_replace_but_ptr(but->layout, old_but_ptr, but);
       BLI_assert(found_layout);
       UNUSED_VARS_NDEBUG(found_layout);
-      ui_button_group_replace_but_ptr(but->layout, old_but_ptr, but);
+      ui_button_group_replace_but_ptr(uiLayoutGetBlock(but->layout), old_but_ptr, but);
     }
   }
 
@@ -4163,12 +4148,14 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
   UI_block_layout_set_current(block, layout);
 
   int totitems = 0;
+  int categories = 0;
   int nbr_entries_nosepr = 0;
   for (const EnumPropertyItem *item = item_array; item->identifier; item++, totitems++) {
     if (!item->identifier[0]) {
       /* inconsistent, but menus with categories do not look good flipped */
       if (item->name) {
         block->flag |= UI_BLOCK_NO_FLIP;
+        categories++;
         nbr_entries_nosepr++;
       }
       /* We do not want simple separators in nbr_entries_nosepr count */
@@ -4194,22 +4181,12 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
     rows++;
   }
 
-  if (block->flag & UI_BLOCK_NO_FLIP) {
+  const char *title = RNA_property_ui_name(but->rnaprop);
+
+  if (title[0] && (categories == 0) && (block->flag & UI_BLOCK_NO_FLIP)) {
     /* Title at the top for menus with categories. */
-    uiDefBut(block,
-             UI_BTYPE_LABEL,
-             0,
-             RNA_property_ui_name(but->rnaprop),
-             0,
-             0,
-             UI_UNIT_X * 5,
-             UI_UNIT_Y,
-             NULL,
-             0.0,
-             0.0,
-             0,
-             0,
-             "");
+    uiDefBut(
+        block, UI_BTYPE_LABEL, 0, title, 0, 0, UI_UNIT_X * 5, UI_UNIT_Y, NULL, 0.0, 0.0, 0, 0, "");
     uiItemS(layout);
   }
 
@@ -4218,10 +4195,13 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
   /* create items */
   uiLayout *split = uiLayoutSplit(layout, 0.0f, false);
 
+  bool new_column;
+
   int column_end = 0;
   uiLayout *column = NULL;
   for (int a = 0; a < totitems; a++) {
-    if (a == column_end) {
+    new_column = (a == column_end);
+    if (new_column) {
       /* start new column, and find out where it ends in advance, so we
        * can flip the order of items properly per column */
       column_end = totitems;
@@ -4240,6 +4220,11 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
     }
 
     const EnumPropertyItem *item = &item_array[a];
+
+    if (new_column && (categories > 0) && item->identifier[0]) {
+      uiItemL(column, "", ICON_NONE);
+      uiItemS(column);
+    }
 
     if (!item->identifier[0]) {
       if (item->name) {
@@ -4264,8 +4249,6 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
                    0,
                    "");
         }
-      }
-      else {
         uiItemS(column);
       }
     }
@@ -4306,23 +4289,11 @@ static void ui_def_but_rna__menu(bContext *UNUSED(C), uiLayout *layout, void *bu
     }
   }
 
-  if (!(block->flag & UI_BLOCK_NO_FLIP)) {
+  if (title[0] && (categories == 0) && !(block->flag & UI_BLOCK_NO_FLIP)) {
     /* Title at the bottom for menus without categories. */
     uiItemS(layout);
-    uiDefBut(block,
-             UI_BTYPE_LABEL,
-             0,
-             RNA_property_ui_name(but->rnaprop),
-             0,
-             0,
-             UI_UNIT_X * 5,
-             UI_UNIT_Y,
-             NULL,
-             0.0,
-             0.0,
-             0,
-             0,
-             "");
+    uiDefBut(
+        block, UI_BTYPE_LABEL, 0, title, 0, 0, UI_UNIT_X * 5, UI_UNIT_Y, NULL, 0.0, 0.0, 0, 0, "");
   }
 
   UI_block_layout_set_current(block, layout);
@@ -4399,7 +4370,7 @@ static void ui_but_submenu_enable(uiBlock *block, uiBut *but)
  * avoid an extra lookup on 'prop' when its already available.
  *
  * When this kind of change won't disrupt branches, best look into making more
- * of our UI functions take prop rather then propname.
+ * of our UI functions take prop rather than propname.
  */
 static uiBut *ui_def_but_rna(uiBlock *block,
                              int type,
@@ -4704,24 +4675,8 @@ uiBut *uiDefButImage(
 uiBut *uiDefButAlert(uiBlock *block, int icon, int x, int y, short width, short height)
 {
   struct ImBuf *ibuf = UI_icon_alert_imbuf_get(icon);
-
-  if (icon == ALERT_ICON_BLENDER) {
-    return uiDefButImage(block, ibuf, x, y, width, height, NULL);
-  }
-
-  uchar icon_color[4];
-  ThemeColorID color_id = TH_INFO_WARNING;
-  if (icon == ALERT_ICON_ERROR) {
-    color_id = TH_INFO_ERROR;
-  }
-  else if (icon == ALERT_ICON_INFO) {
-    color_id = TH_INFO_INFO;
-  }
-  else if (icon == ALERT_ICON_QUESTION) {
-    color_id = TH_INFO_PROPERTY;
-  }
-  UI_GetThemeColorType4ubv(color_id, SPACE_INFO, icon_color);
-  return uiDefButImage(block, ibuf, x, y, width, height, icon_color);
+  bTheme *btheme = UI_GetTheme();
+  return uiDefButImage(block, ibuf, x, y, width, height, btheme->tui.wcol_menu_back.text);
 }
 
 /**
@@ -7061,13 +7016,10 @@ void UI_init(void)
 }
 
 /* after reading userdef file */
-void UI_init_userdef(Main *bmain)
+void UI_init_userdef(void)
 {
-  /* fix saved themes */
-  init_userdef_do_versions(bmain);
+  /* Initialize UI variables from values set in the preferences. */
   uiStyleInit();
-
-  BLO_sanitize_experimental_features_userpref_blend(&U);
 }
 
 void UI_reinit_font(void)

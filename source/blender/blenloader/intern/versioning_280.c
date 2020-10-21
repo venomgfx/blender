@@ -241,7 +241,7 @@ static void do_version_workspaces_after_lib_link(Main *bmain)
       if (screen->temp) {
         /* We do not generate a new workspace for those screens...
          * still need to set some data in win. */
-        win->workspace_hook = BKE_workspace_instance_hook_create(bmain);
+        win->workspace_hook = BKE_workspace_instance_hook_create(bmain, win->winid);
         win->scene = screen->scene;
         /* Deprecated from now on! */
         win->screen = NULL;
@@ -254,10 +254,10 @@ static void do_version_workspaces_after_lib_link(Main *bmain)
       WorkSpaceLayout *layout = BKE_workspace_layout_find(workspace, win->screen);
       BLI_assert(layout != NULL);
 
-      win->workspace_hook = BKE_workspace_instance_hook_create(bmain);
+      win->workspace_hook = BKE_workspace_instance_hook_create(bmain, win->winid);
 
       BKE_workspace_active_set(win->workspace_hook, workspace);
-      BKE_workspace_active_layout_set(win->workspace_hook, workspace, layout);
+      BKE_workspace_active_layout_set(win->workspace_hook, win->winid, workspace, layout);
 
       /* Move scene and view layer to window. */
       Scene *scene = screen->scene;
@@ -890,7 +890,7 @@ static void do_versions_material_convert_legacy_blend_mode(bNodeTree *ntree, cha
       bNodeSocket *color_socket = nodeFindSocket(transp_node, SOCK_IN, "Color");
       bNodeSocket *transp_socket = nodeFindSocket(transp_node, SOCK_OUT, "BSDF");
 
-      /* If incomming link is from a closure socket, we need to convert it. */
+      /* If incoming link is from a closure socket, we need to convert it. */
       if (fromsock->type == SOCK_SHADER) {
         transp_node->locx = 0.33f * fromnode->locx + 0.66f * tonode->locx;
         transp_node->locy = 0.33f * fromnode->locy + 0.66f * tonode->locy;
@@ -978,7 +978,7 @@ static void do_version_curvemapping_walker(Main *bmain, void (*callback)(CurveMa
       }
     }
 
-    // toolsettings
+    /* toolsettings */
     ToolSettings *ts = scene->toolsettings;
     if (ts->vpaint) {
       callback(ts->vpaint->paint.cavity_curve);
@@ -1201,7 +1201,7 @@ static void do_version_fcurve_hide_viewport_fix(struct ID *UNUSED(id),
                                                 struct FCurve *fcu,
                                                 void *UNUSED(user_data))
 {
-  if (!STREQ(fcu->rna_path, "hide")) {
+  if (fcu->rna_path == NULL || !STREQ(fcu->rna_path, "hide")) {
     return;
   }
 
@@ -1665,7 +1665,7 @@ void do_versions_after_linking_280(Main *bmain, ReportList *UNUSED(reports))
       BKE_mesh_tessface_clear(me);
 
       /* Moved from do_versions because we need updated polygons for calculating normals. */
-      if (MAIN_VERSION_OLDER(bmain, 256, 6)) {
+      if (!MAIN_VERSION_ATLEAST(bmain, 256, 6)) {
         BKE_mesh_calc_normals(me);
       }
     }
@@ -1747,7 +1747,7 @@ void do_versions_after_linking_280(Main *bmain, ReportList *UNUSED(reports))
    *
    * \note Be sure to check when bumping the version:
    * - #blo_do_versions_280 in this file.
-   * - "versioning_userdef.c", #BLO_version_defaults_userpref_blend
+   * - "versioning_userdef.c", #blo_do_versions_userdef
    * - "versioning_userdef.c", #do_versions_theme
    *
    * \note Keep this message at the bottom of the function.
@@ -2988,9 +2988,9 @@ void blo_do_versions_280(FileData *fd, Library *UNUSED(lib), Main *bmain)
 
     /* gpencil grid settings */
     for (bGPdata *gpd = bmain->gpencils.first; gpd; gpd = gpd->id.next) {
-      ARRAY_SET_ITEMS(gpd->grid.color, 0.5f, 0.5f, 0.5f);  // Color
-      ARRAY_SET_ITEMS(gpd->grid.scale, 1.0f, 1.0f);        // Scale
-      gpd->grid.lines = GP_DEFAULT_GRID_LINES;             // Number of lines
+      ARRAY_SET_ITEMS(gpd->grid.color, 0.5f, 0.5f, 0.5f); /* Color */
+      ARRAY_SET_ITEMS(gpd->grid.scale, 1.0f, 1.0f);       /* Scale */
+      gpd->grid.lines = GP_DEFAULT_GRID_LINES;            /* Number of lines */
     }
   }
 
@@ -5092,7 +5092,7 @@ void blo_do_versions_280(FileData *fd, Library *UNUSED(lib), Main *bmain)
    *
    * \note Be sure to check when bumping the version:
    * - #do_versions_after_linking_280 in this file.
-   * - "versioning_userdef.c", #BLO_version_defaults_userpref_blend
+   * - "versioning_userdef.c", #blo_do_versions_userdef
    * - "versioning_userdef.c", #do_versions_theme
    *
    * \note Keep this message at the bottom of the function.

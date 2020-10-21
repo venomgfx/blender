@@ -32,7 +32,6 @@
  * For now it's not a priority, so leave as-is.
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -526,7 +525,7 @@ static uiTooltipData *ui_tooltip_data_from_tool(bContext *C, uiBut *but, bool is
      *
      * - Direct access to the tool (as if the toolbar button is pressed).
      * - The key is bound to a brush type (not the exact brush name).
-     * - The key is assigned to the operator it's self
+     * - The key is assigned to the operator itself
      *   (bypassing the tool, executing the operator).
      *
      * Either way case it's useful to show the shortcut.

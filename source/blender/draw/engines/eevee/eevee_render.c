@@ -706,9 +706,12 @@ void EEVEE_render_update_passes(RenderEngine *engine, Scene *scene, ViewLayer *v
   CHECK_PASS_EEVEE(BLOOM, SOCK_RGBA, 3, "RGB");
 
   LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
+    if ((aov->flag & AOV_CONFLICT) != 0) {
+      continue;
+    }
     switch (aov->type) {
       case AOV_TYPE_COLOR:
-        RE_engine_register_pass(engine, scene, view_layer, aov->name, 3, "RGB", SOCK_RGBA);
+        RE_engine_register_pass(engine, scene, view_layer, aov->name, 4, "RGBA", SOCK_RGBA);
         break;
       case AOV_TYPE_VALUE:
         RE_engine_register_pass(engine, scene, view_layer, aov->name, 1, "X", SOCK_FLOAT);

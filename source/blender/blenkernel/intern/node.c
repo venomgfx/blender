@@ -281,10 +281,6 @@ static void library_foreach_node_socket(LibraryForeachIDData *data, bNodeSocket 
     case __SOCK_MESH:
     case SOCK_CUSTOM:
     case SOCK_SHADER:
-    case SOCK_EMITTERS:
-    case SOCK_EVENTS:
-    case SOCK_FORCES:
-    case SOCK_CONTROL_FLOW:
       break;
   }
 }
@@ -377,10 +373,6 @@ static void write_node_socket_default_value(BlendWriter *writer, bNodeSocket *so
     case __SOCK_MESH:
     case SOCK_CUSTOM:
     case SOCK_SHADER:
-    case SOCK_EMITTERS:
-    case SOCK_EVENTS:
-    case SOCK_FORCES:
-    case SOCK_CONTROL_FLOW:
       BLI_assert(false);
       break;
   }
@@ -723,10 +715,6 @@ static void lib_link_node_socket(BlendLibReader *reader, Library *lib, bNodeSock
     case __SOCK_MESH:
     case SOCK_CUSTOM:
     case SOCK_SHADER:
-    case SOCK_EMITTERS:
-    case SOCK_EVENTS:
-    case SOCK_FORCES:
-    case SOCK_CONTROL_FLOW:
       break;
   }
 }
@@ -805,10 +793,6 @@ static void expand_node_socket(BlendExpander *expander, bNodeSocket *sock)
       case __SOCK_MESH:
       case SOCK_CUSTOM:
       case SOCK_SHADER:
-      case SOCK_EMITTERS:
-      case SOCK_EVENTS:
-      case SOCK_FORCES:
-      case SOCK_CONTROL_FLOW:
         break;
     }
   }
@@ -1361,10 +1345,6 @@ static void socket_id_user_increment(bNodeSocket *sock)
     case __SOCK_MESH:
     case SOCK_CUSTOM:
     case SOCK_SHADER:
-    case SOCK_EMITTERS:
-    case SOCK_EVENTS:
-    case SOCK_FORCES:
-    case SOCK_CONTROL_FLOW:
       break;
   }
 }
@@ -1391,10 +1371,6 @@ static void socket_id_user_decrement(bNodeSocket *sock)
     case __SOCK_MESH:
     case SOCK_CUSTOM:
     case SOCK_SHADER:
-    case SOCK_EMITTERS:
-    case SOCK_EVENTS:
-    case SOCK_FORCES:
-    case SOCK_CONTROL_FLOW:
       break;
   }
 }
@@ -1522,14 +1498,6 @@ const char *nodeStaticSocketType(int type, int subtype)
       return "NodeSocketObject";
     case SOCK_IMAGE:
       return "NodeSocketImage";
-    case SOCK_EMITTERS:
-      return "NodeSocketEmitters";
-    case SOCK_EVENTS:
-      return "NodeSocketEvents";
-    case SOCK_FORCES:
-      return "NodeSocketForces";
-    case SOCK_CONTROL_FLOW:
-      return "NodeSocketControlFlow";
   }
   return NULL;
 }
@@ -1595,14 +1563,6 @@ const char *nodeStaticSocketInterfaceType(int type, int subtype)
       return "NodeSocketInterfaceObject";
     case SOCK_IMAGE:
       return "NodeSocketInterfaceImage";
-    case SOCK_EMITTERS:
-      return "NodeSocketInterfaceEmitters";
-    case SOCK_EVENTS:
-      return "NodeSocketInterfaceEvents";
-    case SOCK_FORCES:
-      return "NodeSocketInterfaceForces";
-    case SOCK_CONTROL_FLOW:
-      return "NodeSocketInterfaceControlFlow";
   }
   return NULL;
 }
@@ -2328,9 +2288,9 @@ bNodeTree *ntreeAddTree(Main *bmain, const char *name, const char *idname)
 
 bNodeTree *ntreeCopyTree_ex(const bNodeTree *ntree, Main *bmain, const bool do_id_user)
 {
-  bNodeTree *ntree_copy;
   const int flag = do_id_user ? 0 : LIB_ID_CREATE_NO_USER_REFCOUNT | LIB_ID_CREATE_NO_MAIN;
-  BKE_id_copy_ex(bmain, (ID *)ntree, (ID **)&ntree_copy, flag);
+
+  bNodeTree *ntree_copy = (bNodeTree *)BKE_id_copy_ex(bmain, (ID *)ntree, NULL, flag);
   return ntree_copy;
 }
 bNodeTree *ntreeCopyTree(Main *bmain, const bNodeTree *ntree)
@@ -2767,7 +2727,7 @@ static void free_localized_node_groups(bNodeTree *ntree)
   /* Only localized node trees store a copy for each node group tree.
    * Each node group tree in a localized node tree can be freed,
    * since it is a localized copy itself (no risk of accessing free'd
-   * data in main, see [#37939]).
+   * data in main, see T37939).
    */
   if (!(ntree->id.tag & LIB_TAG_LOCALIZED)) {
     return;
@@ -2981,9 +2941,8 @@ bNodeTree *ntreeLocalize(bNodeTree *ntree)
     /* Make full copy outside of Main database.
      * Note: previews are not copied here.
      */
-    bNodeTree *ltree;
-    BKE_id_copy_ex(
-        NULL, &ntree->id, (ID **)&ltree, (LIB_ID_COPY_LOCALIZE | LIB_ID_COPY_NO_ANIMDATA));
+    bNodeTree *ltree = (bNodeTree *)BKE_id_copy_ex(
+        NULL, &ntree->id, NULL, (LIB_ID_COPY_LOCALIZE | LIB_ID_COPY_NO_ANIMDATA));
 
     ltree->id.tag |= LIB_TAG_LOCALIZED;
 
@@ -4009,16 +3968,6 @@ void ntreeUpdateAllUsers(Main *main, ID *ngroup)
   FOREACH_NODETREE_END;
 }
 
-static void ntreeUpdateSimulationDependencies(Main *main, bNodeTree *simulation_ntree)
-{
-  FOREACH_NODETREE_BEGIN (main, ntree, owner_id) {
-    if (GS(owner_id->name) == ID_SIM && ntree == simulation_ntree) {
-      BKE_simulation_update_dependencies((Simulation *)owner_id, main);
-    }
-  }
-  FOREACH_NODETREE_END;
-}
-
 void ntreeUpdateTree(Main *bmain, bNodeTree *ntree)
 {
   if (!ntree) {
@@ -4072,11 +4021,6 @@ void ntreeUpdateTree(Main *bmain, bNodeTree *ntree)
 
     /* check link validity */
     ntree_validate_links(ntree);
-  }
-
-  if (bmain != NULL && ntree->typeinfo == ntreeType_Simulation &&
-      (ntree->id.flag & LIB_EMBEDDED_DATA)) {
-    ntreeUpdateSimulationDependencies(bmain, ntree);
   }
 
   /* clear update flags */
@@ -4705,21 +4649,6 @@ static void registerTextureNodes(void)
 static void registerSimulationNodes(void)
 {
   register_node_type_sim_group();
-
-  register_node_type_sim_particle_simulation();
-  register_node_type_sim_force();
-  register_node_type_sim_set_particle_attribute();
-  register_node_type_sim_particle_birth_event();
-  register_node_type_sim_particle_time_step_event();
-  register_node_type_sim_execute_condition();
-  register_node_type_sim_multi_execute();
-  register_node_type_sim_particle_mesh_emitter();
-  register_node_type_sim_particle_mesh_collision_event();
-  register_node_type_sim_emit_particles();
-  register_node_type_sim_time();
-  register_node_type_sim_particle_attribute();
-  register_node_type_sim_age_reached_event();
-  register_node_type_sim_kill_particle();
 }
 
 static void registerFunctionNodes(void)

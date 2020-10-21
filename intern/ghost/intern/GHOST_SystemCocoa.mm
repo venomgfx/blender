@@ -1599,7 +1599,7 @@ GHOST_TSuccess GHOST_SystemCocoa::handleMouseEvent(void *eventPtr)
             window->getClientBounds(bounds);
 
           /* Switch back to Cocoa coordinates orientation
-           * (y=0 at bottom, the same as blender internal btw!), and to client coordinates. */
+           * (y=0 at bottom, the same as blender internal BTW!), and to client coordinates. */
           window->getClientBounds(windowBounds);
           window->screenToClient(bounds.m_l, bounds.m_b, correctedBounds.m_l, correctedBounds.m_t);
           window->screenToClient(bounds.m_r, bounds.m_t, correctedBounds.m_r, correctedBounds.m_b);
@@ -1838,7 +1838,7 @@ GHOST_TSuccess GHOST_SystemCocoa::handleKeyEvent(void *eventPtr)
                                      keyCode,
                                      ascii,
                                      utf8_buf,
-                                     false));
+                                     [event isARepeat]));
 #if 0
         printf("Key down rawCode=0x%x charsIgnoringModifiers=%c keyCode=%u ascii=%i %c utf8=%s\n",
                [event keyCode],

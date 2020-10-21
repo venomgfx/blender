@@ -276,9 +276,8 @@ class _draw_tool_settings_context_mode:
             layout.row().prop(brush, "direction", expand=True, text="")
 
         if capabilities.has_color:
-            UnifiedPaintPanel.prop_unified_color(layout, context, brush, "color", text = "")
-            layout.prop(brush, "blend", text="", expand = False)
-
+            UnifiedPaintPanel.prop_unified_color(layout, context, brush, "color", text="")
+            layout.prop(brush, "blend", text="", expand=False)
 
         return True
 
@@ -1135,7 +1134,7 @@ class VIEW3D_MT_view(Menu):
         props = layout.operator("render.opengl",
                                 text="Viewport Render Keyframes",
                                 icon='RENDER_ANIMATION',
-        )
+                                )
         props.animation = True
         props.render_keyed_only = True
 
@@ -2097,7 +2096,7 @@ class VIEW3D_MT_add(Menu):
         # note, don't use 'EXEC_SCREEN' or operators won't get the 'v3d' context.
 
         # Note: was EXEC_AREA, but this context does not have the 'rv3d', which prevents
-        #       "align_view" to work on first call (see [#32719]).
+        #       "align_view" to work on first call (see T32719).
         layout.operator_context = 'EXEC_REGION_WIN'
 
         # layout.operator_menu_enum("object.mesh_add", "type", text="Mesh", icon='OUTLINER_OB_MESH')
@@ -2111,7 +2110,7 @@ class VIEW3D_MT_add(Menu):
         layout.operator("object.text_add", text="Text", icon='OUTLINER_OB_FONT')
         if context.preferences.experimental.use_new_hair_type:
             layout.operator("object.hair_add", text="Hair", icon='OUTLINER_OB_HAIR')
-        if context.preferences.experimental.use_new_particle_system:
+        if context.preferences.experimental.use_new_point_cloud_type:
             layout.operator("object.pointcloud_add", text="Point Cloud", icon='OUTLINER_OB_POINTCLOUD')
         layout.menu("VIEW3D_MT_volume_add", text="Volume", icon='OUTLINER_OB_VOLUME')
         layout.operator_menu_enum("object.gpencil_add", "type", text="Grease Pencil", icon='OUTLINER_OB_GREASEPENCIL')
@@ -2692,8 +2691,6 @@ class VIEW3D_MT_object_quick_effects(Menu):
         layout.operator("object.quick_explode")
         layout.operator("object.quick_smoke")
         layout.operator("object.quick_liquid")
-        if context.preferences.experimental.use_new_particle_system:
-            layout.operator("object.quick_particles")
 
 
 class VIEW3D_MT_object_showhide(Menu):
@@ -2917,8 +2914,8 @@ class VIEW3D_MT_paint_weight(Menu):
 
         if not is_editmode:
 
-            layout.operator("paint.weight_from_bones", text="Assign Automatic From Bones").type = 'AUTOMATIC'
-            layout.operator("paint.weight_from_bones", text="Assign From Bone Envelopes").type = 'ENVELOPES'
+            layout.operator("paint.weight_from_bones", text="Assign Automatic from Bones").type = 'AUTOMATIC'
+            layout.operator("paint.weight_from_bones", text="Assign from Bone Envelopes").type = 'ENVELOPES'
 
             layout.separator()
 
@@ -3066,20 +3063,20 @@ class VIEW3D_MT_mask(Menu):
 
         props = layout.operator("sculpt.dirty_mask", text='Dirty Mask')
 
+
 class VIEW3D_MT_face_sets(Menu):
     bl_label = "Face Sets"
 
     def draw(self, _context):
         layout = self.layout
 
-
-        op = layout.operator("sculpt.face_sets_create", text='Face Set From Masked')
+        op = layout.operator("sculpt.face_sets_create", text='Face Set from Masked')
         op.mode = 'MASKED'
 
-        op = layout.operator("sculpt.face_sets_create", text='Face Set From Visible')
+        op = layout.operator("sculpt.face_sets_create", text='Face Set from Visible')
         op.mode = 'VISIBLE'
 
-        op = layout.operator("sculpt.face_sets_create", text='Face Set From Edit Mode Selection')
+        op = layout.operator("sculpt.face_sets_create", text='Face Set from Edit Mode Selection')
         op.mode = 'SELECTION'
 
         layout.separator()
@@ -3131,6 +3128,7 @@ class VIEW3D_MT_sculpt_set_pivot(Menu):
 
         props = layout.operator("sculpt.set_pivot_position", text="Pivot to Surface Under Cursor")
         props.mode = 'SURFACE'
+
 
 class VIEW3D_MT_face_sets_init(Menu):
     bl_label = "Face Sets Init"
@@ -3247,6 +3245,7 @@ class VIEW3D_MT_particle_context_menu(Menu):
             layout.separator()
 
             layout.operator("particle.select_linked", text="Select Linked")
+
 
 class VIEW3D_MT_particle_showhide(ShowHideMenu, Menu):
     _operator_name = "particle"
@@ -4149,7 +4148,7 @@ class VIEW3D_MT_edit_mesh_normals(Menu):
 
         layout.separator()
 
-        layout.operator("mesh.set_normals_from_faces", text="Set From Faces")
+        layout.operator("mesh.set_normals_from_faces", text="Set from Faces")
 
         layout.operator_context = 'INVOKE_REGION_WIN'
         layout.operator("transform.rotate_normal", text="Rotate...")
@@ -5283,6 +5282,7 @@ class VIEW3D_MT_sculpt_mask_edit_pie(Menu):
         op.filter_type = 'CONTRAST_DECREASE'
         op.auto_iteration_count = False
 
+
 class VIEW3D_MT_sculpt_face_sets_edit_pie(Menu):
 
     bl_label = "Face Sets Edit"
@@ -5291,10 +5291,10 @@ class VIEW3D_MT_sculpt_face_sets_edit_pie(Menu):
         layout = self.layout
         pie = layout.menu_pie()
 
-        op = pie.operator("sculpt.face_sets_create", text='Face Set From Masked')
+        op = pie.operator("sculpt.face_sets_create", text='Face Set from Masked')
         op.mode = 'MASKED'
 
-        op = pie.operator("sculpt.face_sets_create", text='Face Set From Visible')
+        op = pie.operator("sculpt.face_sets_create", text='Face Set from Visible')
         op.mode = 'VISIBLE'
 
         op = pie.operator("sculpt.face_set_change_visibility", text='Invert Visible')
@@ -5302,6 +5302,7 @@ class VIEW3D_MT_sculpt_face_sets_edit_pie(Menu):
 
         op = pie.operator("sculpt.face_set_change_visibility", text='Show All')
         op.mode = 'SHOW_ALL'
+
 
 class VIEW3D_MT_wpaint_vgroup_lock_pie(Menu):
     bl_label = "Vertex Group Locks"
@@ -5379,7 +5380,6 @@ class VIEW3D_PT_view3d_properties(Panel):
 
         layout.use_property_split = True
         layout.use_property_decorate = False  # No animation.
-
 
         col = layout.column()
 
@@ -5547,15 +5547,17 @@ class VIEW3D_PT_object_type_visibility(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
     bl_label = "View Object Types"
-    bl_ui_units_x = 6
+    bl_ui_units_x = 7
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        layout.use_property_decorate = False
 
         view = context.space_data
 
         layout.label(text="Object Types Visibility")
+        layout.separator()
         col = layout.column()
 
         attr_object_types = (
@@ -5930,6 +5932,7 @@ class VIEW3D_PT_gizmo_display(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'HEADER'
     bl_label = "Gizmo"
+    bl_ui_units_x = 8
 
     def draw(self, context):
         layout = self.layout
@@ -5939,6 +5942,7 @@ class VIEW3D_PT_gizmo_display(Panel):
 
         col = layout.column()
         col.label(text="Viewport Gizmos")
+        col.separator()
 
         col.active = view.show_gizmo
         colsub = col.column()
@@ -6109,11 +6113,12 @@ class VIEW3D_PT_overlay_geometry(Panel):
 
         col.prop(overlay, "show_face_orientation")
         row = col.row(align=True)
-
-        row.prop(overlay, "show_fade_inactive", text="")
-        sub = row.row()
-        sub.active = overlay.show_fade_inactive
-        sub.prop(overlay, "fade_inactive_alpha", text="Fade Inactive Geometry")
+        if context.mode not in {'EDIT_ARMATURE', 'POSE', 'OBJECT', 'PAINT_GPENCIL',\
+                                'VERTEX_GPENCIL', 'WEIGHT_GPENCIL', 'SCULPT_GPENCIL', 'EDIT_GPENCIL'}:
+            row.prop(overlay, "show_fade_inactive", text="")
+            sub = row.row()
+            sub.active = overlay.show_fade_inactive
+            sub.prop(overlay, "fade_inactive_alpha", text="Fade Inactive Geometry")
 
         # sub.prop(overlay, "show_onion_skins")
 
@@ -6589,7 +6594,7 @@ class VIEW3D_PT_proportional_edit(Panel):
         tool_settings = context.tool_settings
         col = layout.column()
         col.active = (tool_settings.use_proportional_edit_objects if context.mode == 'OBJECT'
-            else tool_settings.use_proportional_edit)
+                      else tool_settings.use_proportional_edit)
 
         if context.mode != 'OBJECT':
             col.prop(tool_settings, "use_proportional_connected")
@@ -6769,7 +6774,7 @@ class VIEW3D_PT_overlay_gpencil_options(Panel):
                 col = split.column()
                 col.prop(overlay, "use_gpencil_show_directions")
                 col = split.column()
-                col.prop(overlay, "use_gpencil_show_material_name",  text="Material Name")
+                col.prop(overlay, "use_gpencil_show_material_name", text="Material Name")
 
             layout.prop(overlay, "vertex_opacity", text="Vertex Opacity", slider=True)
 
@@ -6952,7 +6957,7 @@ class VIEW3D_MT_gpencil_edit_context_menu(Menu):
         row = layout.row()
 
         if is_point_mode or is_segment_mode:
-            col = row.column()
+            col = row.column(align=True)
 
             col.label(text="Point Context Menu", icon='GP_SELECT_POINTS')
             col.separator()
@@ -7003,7 +7008,7 @@ class VIEW3D_MT_gpencil_edit_context_menu(Menu):
 
         if is_stroke_mode:
 
-            col = row.column()
+            col = row.column(align=True)
             col.label(text="Stroke Context Menu", icon='GP_SELECT_STROKES')
             col.separator()
 
@@ -7056,26 +7061,26 @@ class VIEW3D_MT_gpencil_edit_context_menu(Menu):
 
 
 def draw_gpencil_layer_active(context, layout):
-        gpl = context.active_gpencil_layer
-        if gpl:
-            layout.label(text="Active Layer")
-            row = layout.row(align=True)
-            row.operator_context = 'EXEC_REGION_WIN'
-            row.operator_menu_enum("gpencil.layer_change", "layer", text="", icon='GREASEPENCIL')
-            row.prop(gpl, "info", text="")
-            row.operator("gpencil.layer_remove", text="", icon='X')
+    gpl = context.active_gpencil_layer
+    if gpl:
+        layout.label(text="Active Layer")
+        row = layout.row(align=True)
+        row.operator_context = 'EXEC_REGION_WIN'
+        row.operator_menu_enum("gpencil.layer_change", "layer", text="", icon='GREASEPENCIL')
+        row.prop(gpl, "info", text="")
+        row.operator("gpencil.layer_remove", text="", icon='X')
 
 
 def draw_gpencil_material_active(context, layout):
-        ob = context.active_object
-        if ob and len(ob.material_slots) > 0 and ob.active_material_index >= 0:
-            ma = ob.material_slots[ob.active_material_index].material
-            if ma:
-                layout.label(text="Active Material")
-                row = layout.row(align=True)
-                row.operator_context = 'EXEC_REGION_WIN'
-                row.operator_menu_enum("gpencil.material_set", "slot", text="", icon='MATERIAL')
-                row.prop(ma, "name", text="")
+    ob = context.active_object
+    if ob and len(ob.material_slots) > 0 and ob.active_material_index >= 0:
+        ma = ob.material_slots[ob.active_material_index].material
+        if ma:
+            layout.label(text="Active Material")
+            row = layout.row(align=True)
+            row.operator_context = 'EXEC_REGION_WIN'
+            row.operator_menu_enum("gpencil.material_set", "slot", text="", icon='MATERIAL')
+            row.prop(ma, "name", text="")
 
 
 class VIEW3D_PT_gpencil_sculpt_context_menu(Panel):
@@ -7392,6 +7397,7 @@ class TOPBAR_PT_gpencil_vertexcolor(GreasePencilVertexcolorPanel, Panel):
     def poll(cls, context):
         ob = context.object
         return ob and ob.type == 'GPENCIL'
+
 
 classes = (
     VIEW3D_HT_header,

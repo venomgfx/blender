@@ -362,14 +362,16 @@ static void view_layer_bases_hash_create(ViewLayer *view_layer)
     BLI_mutex_lock(&hash_lock);
 
     if (view_layer->object_bases_hash == NULL) {
-      view_layer->object_bases_hash = BLI_ghash_new(
-          BLI_ghashutil_ptrhash, BLI_ghashutil_ptrcmp, __func__);
+      GHash *hash = BLI_ghash_new(BLI_ghashutil_ptrhash, BLI_ghashutil_ptrcmp, __func__);
 
       LISTBASE_FOREACH (Base *, base, &view_layer->object_bases) {
         if (base->object) {
-          BLI_ghash_insert(view_layer->object_bases_hash, base->object, base);
+          BLI_ghash_insert(hash, base->object, base);
         }
       }
+
+      /* Assign pointer only after hash is complete. */
+      view_layer->object_bases_hash = hash;
     }
 
     BLI_mutex_unlock(&hash_lock);
@@ -1659,18 +1661,19 @@ void BKE_view_layer_selected_editable_objects_iterator_begin(BLI_Iterator *iter,
   objects_iterator_begin(iter, data_in, BASE_VISIBLE_DEPSGRAPH | BASE_SELECTED);
   if (iter->valid) {
     if (BKE_object_is_libdata((Object *)iter->current) == false) {
-      // First object is valid (selectable and not libdata) -> all good.
+      /* First object is valid (selectable and not libdata) -> all good. */
       return;
     }
 
-    // Object is selectable but not editable -> search for another one.
+    /* Object is selectable but not editable -> search for another one. */
     BKE_view_layer_selected_editable_objects_iterator_next(iter);
   }
 }
 
 void BKE_view_layer_selected_editable_objects_iterator_next(BLI_Iterator *iter)
 {
-  // Search while there are objects and the one we have is not editable (editable = not libdata).
+  /* Search while there are objects and the one we have is not editable (editable = not libdata).
+   */
   do {
     objects_iterator_next(iter, BASE_VISIBLE_DEPSGRAPH | BASE_SELECTED);
   } while (iter->valid && BKE_object_is_libdata((Object *)iter->current) != false);

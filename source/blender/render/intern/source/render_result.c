@@ -444,30 +444,6 @@ RenderResult *render_result_new(Render *re,
       if (view_layer->passflag & SCE_PASS_SUBSURFACE_COLOR) {
         RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_SUBSURFACE_COLOR, view, "RGB");
       }
-      if (view_layer->eevee.render_passes & EEVEE_RENDER_PASS_BLOOM) {
-        RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_BLOOM, view, "RGB");
-      }
-      if (view_layer->eevee.render_passes & EEVEE_RENDER_PASS_VOLUME_SCATTER) {
-        RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_VOLUME_SCATTER, view, "RGB");
-      }
-      if (view_layer->eevee.render_passes & EEVEE_RENDER_PASS_VOLUME_TRANSMITTANCE) {
-        RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 3, RE_PASSNAME_VOLUME_TRANSMITTANCE, view, "RGB");
-      }
-      LISTBASE_FOREACH (ViewLayerAOV *, aov, &view_layer->aovs) {
-        if ((aov->flag & AOV_CONFLICT) != 0) {
-          continue;
-        }
-        switch (aov->type) {
-          case AOV_TYPE_COLOR:
-            RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 4, aov->name, view, "RGBA");
-            break;
-          case AOV_TYPE_VALUE:
-            RENDER_LAYER_ADD_PASS_SAFE(rr, rl, 1, aov->name, view, "X");
-            break;
-          default:
-            break;
-        }
-      }
 #undef RENDER_LAYER_ADD_PASS_SAFE
     }
   }

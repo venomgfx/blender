@@ -744,7 +744,7 @@ static void default_get_tarmat_full_bbone(struct Depsgraph *UNUSED(depsgraph),
  * (Hopefully all compilers will be happy with the lines with just a space on them.
  * Those are really just to help this code easier to read).
  */
-// TODO: cope with getting rotation order...
+/* TODO: cope with getting rotation order... */
 #define SINGLETARGET_GET_TARS(con, datatar, datasubtarget, ct, list) \
   { \
     ct = MEM_callocN(sizeof(bConstraintTarget), "tempConstraintTarget"); \
@@ -779,7 +779,7 @@ static void default_get_tarmat_full_bbone(struct Depsgraph *UNUSED(depsgraph),
  * (Hopefully all compilers will be happy with the lines with just a space on them. Those are
  *  really just to help this code easier to read)
  */
-// TODO: cope with getting rotation order...
+/* TODO: cope with getting rotation order... */
 #define SINGLETARGETNS_GET_TARS(con, datatar, ct, list) \
   { \
     ct = MEM_callocN(sizeof(bConstraintTarget), "tempConstraintTarget"); \
@@ -4340,7 +4340,7 @@ static void damptrack_do_transform(float matrix[4][4], const float tarvec_in[3],
      * we may have destroyed that in the process of multiplying the matrix
      */
     unit_m4(tmat);
-    mul_m4_m3m4(tmat, rmat, matrix);  // m1, m3, m2
+    mul_m4_m3m4(tmat, rmat, matrix); /* m1, m3, m2 */
 
     copy_m4_m4(matrix, tmat);
     copy_v3_v3(matrix[3], obloc);
@@ -4577,7 +4577,7 @@ static bConstraintTypeInfo CTI_PIVOT = {
     pivotcon_id_looper,       /* id looper */
     NULL,                     /* copy data */
     NULL,
-    /* new data */       // XXX: might be needed to get 'normal' pivot behavior...
+    /* new data */       /* XXX: might be needed to get 'normal' pivot behavior... */
     pivotcon_get_tars,   /* get constraint targets */
     pivotcon_flush_tars, /* flush constraint targets */
     default_get_tarmat,  /* get target matrix */
@@ -5396,7 +5396,7 @@ bool BKE_constraint_remove_ex(ListBase *list, Object *ob, bConstraint *con, bool
 {
   const short type = con->type;
   if (BKE_constraint_remove(list, con)) {
-    /* ITASC needs to be rebuilt once a constraint is removed [#26920] */
+    /* ITASC needs to be rebuilt once a constraint is removed T26920. */
     if (clear_dep && ELEM(type, CONSTRAINT_TYPE_KINEMATIC, CONSTRAINT_TYPE_SPLINEIK)) {
       BIK_clear_data(ob->pose);
     }

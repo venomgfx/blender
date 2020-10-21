@@ -1090,7 +1090,7 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
         }
       }
       /* if this is not the last modifier in the stack then recalculate the normals
-       * to avoid giving bogus normals to the next modifier see: [#23673] */
+       * to avoid giving bogus normals to the next modifier see: T23673. */
       else if (isPrevDeform && mti->dependsOnNormals && mti->dependsOnNormals(md)) {
         if (mesh_final == NULL) {
           mesh_final = BKE_mesh_copy_for_eval(mesh_input, true);
@@ -1156,7 +1156,7 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
 
       /* set the Mesh to only copy needed data */
       CustomData_MeshMasks mask = md_datamask->mask;
-      /* needMapping check here fixes bug [#28112], otherwise it's
+      /* needMapping check here fixes bug T28112, otherwise it's
        * possible that it won't be copied */
       CustomData_MeshMasks_update(&mask, &append_mask);
       if (need_mapping) {
@@ -1488,8 +1488,10 @@ static void editbmesh_calc_modifiers(struct Depsgraph *depsgraph,
   /* Modifier evaluation modes. */
   const int required_mode = eModifierMode_Realtime | eModifierMode_Editmode;
 
+  const bool use_render = (DEG_get_mode(depsgraph) == DAG_EVAL_RENDER);
   /* Modifier evaluation contexts for different types of modifiers. */
-  const ModifierEvalContext mectx = {depsgraph, ob, MOD_APPLY_USECACHE};
+  ModifierApplyFlag apply_render = use_render ? MOD_APPLY_RENDER : 0;
+  const ModifierEvalContext mectx = {depsgraph, ob, MOD_APPLY_USECACHE | apply_render};
   const ModifierEvalContext mectx_orco = {depsgraph, ob, MOD_APPLY_ORCO};
 
   /* Get effective list of modifiers to execute. Some effects like shape keys

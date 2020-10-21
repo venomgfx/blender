@@ -22,8 +22,8 @@
  * \ingroup bke
  */
 
-/* defines BLI_INLINE */
-#include "BLI_compiler_compat.h"
+#include "BKE_mesh_types.h"
+#include "BLI_utildefines.h"
 
 struct BLI_Stack;
 struct BMEditMesh;
@@ -99,7 +99,6 @@ void BKE_mesh_looptri_get_real_edges(const struct Mesh *mesh,
 void BKE_mesh_free(struct Mesh *me);
 void BKE_mesh_clear_geometry(struct Mesh *me);
 struct Mesh *BKE_mesh_add(struct Main *bmain, const char *name);
-struct Mesh *BKE_mesh_copy(struct Main *bmain, const struct Mesh *me);
 void BKE_mesh_copy_settings(struct Mesh *me_dst, const struct Mesh *me_src);
 void BKE_mesh_update_customdata_pointers(struct Mesh *me, const bool do_ensure_tess_cd);
 void BKE_mesh_ensure_skin_customdata(struct Mesh *me);
@@ -673,7 +672,7 @@ void BKE_mesh_strip_loose_edges(struct Mesh *me);
 
 void BKE_mesh_calc_edges_legacy(struct Mesh *me, const bool use_old);
 void BKE_mesh_calc_edges_loose(struct Mesh *mesh);
-void BKE_mesh_calc_edges(struct Mesh *mesh, bool update, const bool select);
+void BKE_mesh_calc_edges(struct Mesh *mesh, bool keep_existing_edges, const bool select_new_edges);
 void BKE_mesh_calc_edges_tessface(struct Mesh *mesh);
 
 /* In DerivedMesh.c */
@@ -685,18 +684,10 @@ void BKE_mesh_wrapper_deferred_finalize(struct Mesh *me_eval,
 void BKE_mesh_eval_geometry(struct Depsgraph *depsgraph, struct Mesh *mesh);
 
 /* Draw Cache */
-enum {
-  BKE_MESH_BATCH_DIRTY_ALL = 0,
-  BKE_MESH_BATCH_DIRTY_SELECT,
-  BKE_MESH_BATCH_DIRTY_SELECT_PAINT,
-  BKE_MESH_BATCH_DIRTY_SHADING,
-  BKE_MESH_BATCH_DIRTY_UVEDIT_ALL,
-  BKE_MESH_BATCH_DIRTY_UVEDIT_SELECT,
-};
-void BKE_mesh_batch_cache_dirty_tag(struct Mesh *me, int mode);
+void BKE_mesh_batch_cache_dirty_tag(struct Mesh *me, eMeshBatchDirtyMode mode);
 void BKE_mesh_batch_cache_free(struct Mesh *me);
 
-extern void (*BKE_mesh_batch_cache_dirty_tag_cb)(struct Mesh *me, int mode);
+extern void (*BKE_mesh_batch_cache_dirty_tag_cb)(struct Mesh *me, eMeshBatchDirtyMode mode);
 extern void (*BKE_mesh_batch_cache_free_cb)(struct Mesh *me);
 
 /* Inlines */

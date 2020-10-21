@@ -42,6 +42,7 @@
 
 #include "BLT_translation.h"
 
+#include "BKE_armature.h"
 #include "BKE_blender_version.h"
 #include "BKE_context.h"
 #include "BKE_curve.h"
@@ -59,7 +60,6 @@
 
 #include "DEG_depsgraph_query.h"
 
-#include "ED_armature.h"
 #include "ED_info.h"
 
 #include "UI_resources.h"
@@ -252,7 +252,7 @@ static void stats_object_edit(Object *obedit, SceneStats *stats)
         stats->totbonesel++;
       }
 
-      /* if this is a connected child and it's parent is being moved, remove our root */
+      /* if this is a connected child and its parent is being moved, remove our root */
       if ((ebo->flag & BONE_CONNECTED) && (ebo->flag & BONE_ROOTSEL) && ebo->parent &&
           (ebo->parent->flag & BONE_TIPSEL)) {
         stats->totvertsel--;
