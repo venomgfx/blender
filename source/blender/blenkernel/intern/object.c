@@ -94,6 +94,7 @@
 #include "BKE_fcurve.h"
 #include "BKE_fcurve_driver.h"
 #include "BKE_font.h"
+#include "BKE_geometry_set.h"
 #include "BKE_global.h"
 #include "BKE_gpencil.h"
 #include "BKE_gpencil_geom.h"
@@ -1507,6 +1508,9 @@ void BKE_object_eval_assign_data(Object *object_eval, ID *data_eval, bool is_own
       object_eval->data = data_eval;
     }
   }
+
+  /* Is set separately currently. */
+  object_eval->runtime.geometry_set_eval = NULL;
 }
 
 /**
@@ -1550,6 +1554,10 @@ void BKE_object_free_derived_caches(Object *ob)
   if (ob->runtime.gpd_eval != NULL) {
     BKE_gpencil_eval_delete(ob->runtime.gpd_eval);
     ob->runtime.gpd_eval = NULL;
+  }
+
+  if (ob->runtime.geometry_set_eval != NULL) {
+    BKE_geometry_set_user_remove(ob->runtime.geometry_set_eval);
   }
 }
 
@@ -4870,6 +4878,7 @@ void BKE_object_runtime_reset_on_copy(Object *object, const int UNUSED(flag))
   runtime->data_eval = NULL;
   runtime->mesh_deform_eval = NULL;
   runtime->curve_cache = NULL;
+  runtime->geometry_set_eval = NULL;
 }
 
 /**

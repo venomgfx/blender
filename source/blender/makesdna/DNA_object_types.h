@@ -51,6 +51,7 @@ struct RigidBodyOb;
 struct SculptSession;
 struct SoftBody;
 struct bGPdata;
+struct GeometrySetC;
 
 /* Vertex Groups - Name Info */
 typedef struct bDeformGroup {
@@ -150,6 +151,7 @@ typedef struct Object_Runtime {
    * It has all modifiers applied.
    */
   struct ID *data_eval;
+  struct GeometrySetC *geometry_set_eval;
   /**
    * Mesh structure created during object evaluation.
    * It has deformation only modifiers applied on it.
