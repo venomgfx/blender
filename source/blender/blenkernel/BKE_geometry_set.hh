@@ -27,6 +27,8 @@
 #include "BLI_map.hh"
 #include "BLI_user_counter.hh"
 
+#include "BKE_geometry_set.h"
+
 struct Mesh;
 struct PointCloud;
 

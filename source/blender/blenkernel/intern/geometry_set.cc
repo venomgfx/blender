@@ -369,3 +369,24 @@ PointCloud *PointCloudComponent::get_for_write()
 /** \} */
 
 }  // namespace blender::bke
+
+/* -------------------------------------------------------------------- */
+/** \name C API
+ * \{ */
+
+static blender::bke::GeometrySet *unwrap(GeometrySetC *geometry_set)
+{
+  return reinterpret_cast<blender::bke::GeometrySet *>(geometry_set);
+}
+
+void BKE_geometry_set_user_add(GeometrySetC *geometry_set)
+{
+  unwrap(geometry_set)->user_add();
+}
+
+void BKE_geometry_set_user_remove(GeometrySetC *geometry_set)
+{
+  unwrap(geometry_set)->user_remove();
+}
+
+/** \} */
