@@ -38,6 +38,8 @@ GeometryComponent *GeometryComponent::create(GeometryComponentType component_typ
       return new MeshComponent();
     case GeometryComponentType::PointCloud:
       return new PointCloudComponent();
+    case GeometryComponentType::Instances:
+      return new InstancesComponent();
   }
   BLI_assert(false);
   return nullptr;
@@ -372,6 +374,26 @@ PointCloud *PointCloudComponent::get_for_write()
 {
   BLI_assert(this->is_mutable());
   return pointcloud_;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Instances Component
+ * \{ */
+
+GeometryComponent *InstancesComponent::copy() const
+{
+  InstancesComponent *new_component = new InstancesComponent();
+  new_component->positions_ = positions_;
+  new_component->instanced_object_ = instanced_object_;
+  return new_component;
+}
+
+void InstancesComponent::replace(Vector<float3> positions, Object *instanced_object)
+{
+  positions_ = std::move(positions);
+  instanced_object_ = instanced_object;
 }
 
 /** \} */

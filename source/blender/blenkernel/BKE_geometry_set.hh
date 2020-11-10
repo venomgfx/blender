@@ -23,6 +23,7 @@
 #include <atomic>
 #include <iostream>
 
+#include "BLI_float3.hh"
 #include "BLI_hash.hh"
 #include "BLI_map.hh"
 #include "BLI_user_counter.hh"
@@ -31,6 +32,7 @@
 
 struct Mesh;
 struct PointCloud;
+struct Object;
 
 namespace blender::bke {
 
@@ -43,6 +45,7 @@ using GeometrySetPtr = UserCounter<class GeometrySet>;
 enum class GeometryComponentType {
   Mesh,
   PointCloud,
+  Instances,
 };
 
 }  // namespace blender::bke
@@ -188,6 +191,21 @@ class PointCloudComponent : public GeometryComponent {
   PointCloud *get_for_write();
 
   static constexpr inline GeometryComponentType type = GeometryComponentType::PointCloud;
+};
+
+/** A geometry component that stores instances. */
+class InstancesComponent : public GeometryComponent {
+ private:
+  Vector<float3> positions_;
+  Object *instanced_object_ = nullptr;
+
+ public:
+  ~InstancesComponent() = default;
+  GeometryComponent *copy() const override;
+
+  void replace(Vector<float3> positions, Object *instanced_object);
+
+  static constexpr inline GeometryComponentType type = GeometryComponentType::Instances;
 };
 
 inline GeometrySetC *wrap(blender::bke::GeometrySet *geometry_set)
