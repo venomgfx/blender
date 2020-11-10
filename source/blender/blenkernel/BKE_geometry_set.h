@@ -24,10 +24,19 @@
 extern "C" {
 #endif
 
-typedef struct GeometrySetC GeometrySetC;
+struct Object;
 
-void BKE_geometry_set_user_add(GeometrySetC *geometry_set);
-void BKE_geometry_set_user_remove(GeometrySetC *geometry_set);
+typedef struct GeometrySetC GeometrySetC;
+typedef struct InstancesComponentC InstancesComponentC;
+
+void BKE_geometry_set_user_add(GeometrySetC *geometry_set_c);
+void BKE_geometry_set_user_remove(GeometrySetC *geometry_set_c);
+
+bool BKE_geometry_set_has_instances(const GeometrySetC *geometry_set_c);
+
+int BKE_geometry_set_instances(const GeometrySetC *geometry_set_c,
+                               float (**r_positions)[3],
+                               struct Object ***r_objects);
 
 #ifdef __cplusplus
 }

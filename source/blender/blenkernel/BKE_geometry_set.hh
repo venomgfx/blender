@@ -197,16 +197,18 @@ class PointCloudComponent : public GeometryComponent {
 class InstancesComponent : public GeometryComponent {
  private:
   Vector<float3> positions_;
-  const Object *instanced_object_ = nullptr;
+  Vector<const Object *> objects_;
 
  public:
   ~InstancesComponent() = default;
   GeometryComponent *copy() const override;
 
-  void replace(Vector<float3> positions, const Object *instanced_object);
+  void replace(Vector<float3> positions, Vector<const Object *> objects);
+  void replace(Vector<float3> positions, const Object *object);
 
-  const Object *instanced_object() const;
+  Span<const Object *> objects() const;
   Span<float3> positions() const;
+  int instances_amount() const;
 
   static constexpr inline GeometryComponentType type = GeometryComponentType::Instances;
 };
@@ -216,9 +218,19 @@ inline GeometrySetC *wrap(blender::bke::GeometrySet *geometry_set)
   return reinterpret_cast<GeometrySetC *>(geometry_set);
 }
 
+inline const GeometrySetC *wrap(const blender::bke::GeometrySet *geometry_set)
+{
+  return reinterpret_cast<const GeometrySetC *>(geometry_set);
+}
+
 inline blender::bke::GeometrySet *unwrap(GeometrySetC *geometry_set_c)
 {
   return reinterpret_cast<blender::bke::GeometrySet *>(geometry_set_c);
+}
+
+inline const blender::bke::GeometrySet *unwrap(const GeometrySetC *geometry_set_c)
+{
+  return reinterpret_cast<const blender::bke::GeometrySet *>(geometry_set_c);
 }
 
 }  // namespace blender::bke

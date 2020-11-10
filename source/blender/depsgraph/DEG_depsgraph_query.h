@@ -160,9 +160,6 @@ typedef struct DEGObjectIterData {
    * other users of the iterator. */
   struct Object temp_dupli_object;
 
-  /* **** Iteration over Geometry Set. ****/
-  int instances_component_index;
-
   /* **** Iteration over ID nodes **** */
   size_t id_node_index;
   size_t num_id_nodes;

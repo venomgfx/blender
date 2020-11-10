@@ -386,24 +386,38 @@ GeometryComponent *InstancesComponent::copy() const
 {
   InstancesComponent *new_component = new InstancesComponent();
   new_component->positions_ = positions_;
-  new_component->instanced_object_ = instanced_object_;
+  new_component->objects_ = objects_;
   return new_component;
 }
 
-void InstancesComponent::replace(Vector<float3> positions, const Object *instanced_object)
+void InstancesComponent::replace(Vector<float3> positions, Vector<const Object *> objects)
 {
+  BLI_assert(positions.size() == objects.size());
   positions_ = std::move(positions);
-  instanced_object_ = instanced_object;
+  objects_ = std::move(objects);
 }
 
-const Object *InstancesComponent::instanced_object() const
+void InstancesComponent::replace(Vector<float3> positions, const Object *object)
 {
-  return instanced_object_;
+  positions_ = std::move(positions);
+  objects_.clear();
+  objects_.append_n_times(object, positions_.size());
+}
+
+Span<const Object *> InstancesComponent::objects() const
+{
+  return objects_;
 }
 
 Span<float3> InstancesComponent::positions() const
 {
   return positions_;
+}
+
+int InstancesComponent::instances_amount() const
+{
+  BLI_assert(positions_.size() == objects_.size());
+  return objects_.size();
 }
 
 /** \} */
@@ -414,14 +428,35 @@ Span<float3> InstancesComponent::positions() const
 /** \name C API
  * \{ */
 
-void BKE_geometry_set_user_add(GeometrySetC *geometry_set)
+void BKE_geometry_set_user_add(GeometrySetC *geometry_set_c)
 {
-  blender::bke::unwrap(geometry_set)->user_add();
+  blender::bke::unwrap(geometry_set_c)->user_add();
 }
 
-void BKE_geometry_set_user_remove(GeometrySetC *geometry_set)
+void BKE_geometry_set_user_remove(GeometrySetC *geometry_set_c)
 {
-  blender::bke::unwrap(geometry_set)->user_remove();
+  blender::bke::unwrap(geometry_set_c)->user_remove();
+}
+
+bool BKE_geometry_set_has_instances(const GeometrySetC *geometry_set_c)
+{
+  return blender::bke::unwrap(geometry_set_c)
+             ->get_component_for_read<blender::bke::InstancesComponent>() != nullptr;
+}
+
+int BKE_geometry_set_instances(const GeometrySetC *geometry_set_c,
+                               float (**r_positions)[3],
+                               Object ***r_objects)
+{
+  using namespace blender::bke;
+  const GeometrySet *geometry_set = unwrap(geometry_set_c);
+  const InstancesComponent *component = geometry_set->get_component_for_read<InstancesComponent>();
+  if (component == nullptr) {
+    return 0;
+  }
+  *r_positions = (float(*)[3])component->positions().data();
+  *r_objects = (Object **)component->objects().data();
+  return component->instances_amount();
 }
 
 /** \} */
