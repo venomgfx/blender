@@ -161,8 +161,7 @@ typedef struct DEGObjectIterData {
   struct Object temp_dupli_object;
 
   /* **** Iteration over Geometry Set. ****/
-
-  bool geometry_set_finished;
+  int instances_component_index;
 
   /* **** Iteration over ID nodes **** */
   size_t id_node_index;

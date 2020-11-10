@@ -197,13 +197,16 @@ class PointCloudComponent : public GeometryComponent {
 class InstancesComponent : public GeometryComponent {
  private:
   Vector<float3> positions_;
-  Object *instanced_object_ = nullptr;
+  const Object *instanced_object_ = nullptr;
 
  public:
   ~InstancesComponent() = default;
   GeometryComponent *copy() const override;
 
-  void replace(Vector<float3> positions, Object *instanced_object);
+  void replace(Vector<float3> positions, const Object *instanced_object);
+
+  const Object *instanced_object() const;
+  Span<float3> positions() const;
 
   static constexpr inline GeometryComponentType type = GeometryComponentType::Instances;
 };

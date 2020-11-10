@@ -390,10 +390,20 @@ GeometryComponent *InstancesComponent::copy() const
   return new_component;
 }
 
-void InstancesComponent::replace(Vector<float3> positions, Object *instanced_object)
+void InstancesComponent::replace(Vector<float3> positions, const Object *instanced_object)
 {
   positions_ = std::move(positions);
   instanced_object_ = instanced_object;
+}
+
+const Object *InstancesComponent::instanced_object() const
+{
+  return instanced_object_;
+}
+
+Span<float3> InstancesComponent::positions() const
+{
+  return positions_;
 }
 
 /** \} */

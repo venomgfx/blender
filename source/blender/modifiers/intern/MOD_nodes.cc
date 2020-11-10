@@ -91,7 +91,7 @@ static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphConte
   }
   if (nmd->instance_object_temp) {
     DEG_add_object_relation(
-        ctx->node, nmd->instance_object_temp, DEG_OB_COMP_ANY, "nodes modifier");
+        ctx->node, nmd->instance_object_temp, DEG_OB_COMP_GEOMETRY, "nodes modifier");
   }
 
   /* TODO: Add relations for IDs in settings. */

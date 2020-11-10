@@ -237,7 +237,7 @@ void deg_iterator_objects_step(BLI_Iterator *iter, deg::IDNode *id_node)
   if (ob_visibility & (OB_VISIBLE_SELF | OB_VISIBLE_PARTICLES)) {
     iter->current = object;
     iter->skip = false;
-    data->geometry_set_finished = false;
+    data->instances_component_index = 0;
   }
 }
 
@@ -264,7 +264,7 @@ void DEG_iterator_objects_begin(BLI_Iterator *iter, DEGObjectIterData *data)
   data->id_node_index = 0;
   data->num_id_nodes = num_id_nodes;
   data->eval_mode = DEG_get_mode(depsgraph);
-  data->geometry_set_finished = true;
+  data->instances_component_index = 0;
   deg_invalidate_iterator_work_data(data);
 
   deg::IDNode *id_node = deg_graph->id_nodes[data->id_node_index];
@@ -300,15 +300,29 @@ void DEG_iterator_objects_next(BLI_Iterator *iter)
     if (GS(current_id->name) == ID_OB) {
       Object *current_object = (Object *)current_id;
       if (current_object->runtime.geometry_set_eval != nullptr) {
-        if (!data->geometry_set_finished) {
-          bke::GeometrySet *geometry_set = bke::unwrap(current_object->runtime.geometry_set_eval);
-          PointCloud *pointcloud = (PointCloud *)geometry_set->get_pointcloud_for_read();
-          Object *temp_object = &data->temp_dupli_object;
-          *temp_object = *current_object;
-          temp_object->data = pointcloud;
-          iter->current = temp_object;
-          data->geometry_set_finished = true;
-          return;
+        bke::GeometrySet *geometry_set = bke::unwrap(current_object->runtime.geometry_set_eval);
+        const bke::InstancesComponent *component =
+            geometry_set->get_component_for_read<bke::InstancesComponent>();
+        if (component != nullptr) {
+          blender::Span<blender::float3> positions = component->positions();
+          const Object *object_to_instance = component->instanced_object();
+          if (data->instances_component_index < positions.size()) {
+            blender::float3 position = positions[data->instances_component_index];
+            if (object_to_instance != nullptr) {
+              float mat[4][4];
+              copy_m4_m4(mat, current_object->obmat);
+              translate_m4(mat, position.x, position.y, position.z);
+
+              Object *temp_object = &data->temp_dupli_object;
+              *temp_object = *object_to_instance;
+              mul_m4_m4_post(mat, object_to_instance->obmat);
+              copy_m4_m4(temp_object->obmat, mat);
+              iter->current = temp_object;
+
+              data->instances_component_index++;
+              return;
+            }
+          }
         }
       }
     }
