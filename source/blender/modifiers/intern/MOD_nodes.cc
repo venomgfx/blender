@@ -89,6 +89,10 @@ static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphConte
   if (nmd->node_group != nullptr) {
     DEG_add_node_tree_relation(ctx->node, nmd->node_group, "Nodes Modifier");
   }
+  if (nmd->instance_object_temp) {
+    DEG_add_object_relation(
+        ctx->node, nmd->instance_object_temp, DEG_OB_COMP_ANY, "nodes modifier");
+  }
 
   /* TODO: Add relations for IDs in settings. */
 }
@@ -97,6 +101,7 @@ static void foreachIDLink(ModifierData *md, Object *ob, IDWalkFunc walk, void *u
 {
   NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
   walk(userData, ob, (ID **)&nmd->node_group, IDWALK_CB_USER);
+  walk(userData, ob, (ID **)&nmd->instance_object_temp, IDWALK_CB_USER);
 
   struct ForeachSettingData {
     IDWalkFunc walk;
@@ -784,8 +789,21 @@ static GeometrySetC *modifyPointCloud(ModifierData *md,
                                       const ModifierEvalContext *ctx,
                                       GeometrySetC *geometry_set_c)
 {
+  NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
+
   GeometrySetPtr input_geometry_set = unwrap(geometry_set_c);
   GeometrySetPtr output_geometry_set = modifyGeometry(md, ctx, std::move(input_geometry_set));
+
+  make_geometry_set_mutable(output_geometry_set);
+  InstancesComponent &component =
+      output_geometry_set->get_component_for_write<InstancesComponent>();
+  Vector<float3> positions;
+  positions.append({1, 2, 3});
+  positions.append({-1, 2, 3});
+  positions.append({-1, -2, 3});
+  positions.append({-1, -2, -3});
+  component.replace(positions, nmd->instance_object_temp);
+
   return wrap(output_geometry_set.release());
 }
 
@@ -827,6 +845,7 @@ static void panel_draw(const bContext *UNUSED(C), Panel *panel)
   uiLayoutSetPropDecorate(layout, false);
 
   uiItemR(layout, ptr, "node_group", 0, nullptr, ICON_MESH_DATA);
+  uiItemR(layout, ptr, "instance_object_temp", 0, nullptr, ICON_NONE);
 
   if (nmd->node_group != nullptr && nmd->settings.properties != nullptr) {
     PointerRNA settings_ptr;
