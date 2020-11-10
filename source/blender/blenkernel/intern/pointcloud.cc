@@ -379,9 +379,10 @@ void BKE_pointcloud_data_update(struct Depsgraph *depsgraph, struct Scene *scene
 
   /* Evaluate modifiers. */
   PointCloud *pointcloud = static_cast<PointCloud *>(object->data);
-  GeometrySetPtr input_geometry_set = GeometrySet::create_with_pointcloud(pointcloud, false);
+  GeometrySetPtr input_geometry_set = GeometrySet::create_with_pointcloud(
+      pointcloud, GeometryOwnershipType::ReadOnly);
   GeometrySetPtr geometry_set_eval = pointcloud_evaluate_modifiers(
-      depsgraph, scene, object, input_geometry_set);
+      depsgraph, scene, object, std::move(input_geometry_set));
 
   /* Assign evaluated object. */
   /* Just use the original point cloud for now. */

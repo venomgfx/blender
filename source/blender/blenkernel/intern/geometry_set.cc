@@ -165,35 +165,36 @@ bool GeometrySet::has_pointcloud() const
 }
 
 /* Create a new geometry set that only contains the given mesh. */
-GeometrySetPtr GeometrySet::create_with_mesh(Mesh *mesh, bool transfer_ownership)
+GeometrySetPtr GeometrySet::create_with_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
   GeometrySet *geometry_set = new GeometrySet();
   MeshComponent &component = geometry_set->get_component_for_write<MeshComponent>();
-  component.replace(mesh, transfer_ownership);
+  component.replace(mesh, ownership);
   return geometry_set;
 }
 
 /* Create a new geometry set that only contains the given point cloud. */
-GeometrySetPtr GeometrySet::create_with_pointcloud(PointCloud *pointcloud, bool transfer_ownership)
+GeometrySetPtr GeometrySet::create_with_pointcloud(PointCloud *pointcloud,
+                                                   GeometryOwnershipType ownership)
 {
   GeometrySet *geometry_set = new GeometrySet();
   PointCloudComponent &component = geometry_set->get_component_for_write<PointCloudComponent>();
-  component.replace(pointcloud, transfer_ownership);
+  component.replace(pointcloud, ownership);
   return geometry_set;
 }
 
 /* Clear the existing mesh and replace it with the given one. */
-void GeometrySet::replace_mesh(Mesh *mesh, bool transfer_ownership)
+void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
   MeshComponent &component = this->get_component_for_write<MeshComponent>();
-  component.replace(mesh, transfer_ownership);
+  component.replace(mesh, ownership);
 }
 
 /* Clear the existing point cloud and replace with the given one. */
-void GeometrySet::replace_pointcloud(PointCloud *pointcloud, bool transfer_ownership)
+void GeometrySet::replace_pointcloud(PointCloud *pointcloud, GeometryOwnershipType ownership)
 {
   PointCloudComponent &pointcloud_component = this->get_component_for_write<PointCloudComponent>();
-  pointcloud_component.replace(pointcloud, transfer_ownership);
+  pointcloud_component.replace(pointcloud, ownership);
 }
 
 /* Returns a mutable mesh or null. No ownership is transferred. */
@@ -248,7 +249,7 @@ GeometryComponent *MeshComponent::copy() const
   MeshComponent *new_component = new MeshComponent();
   if (mesh_ != nullptr) {
     new_component->mesh_ = BKE_mesh_copy_for_eval(mesh_, false);
-    new_component->owned_ = true;
+    new_component->ownership_ = GeometryOwnershipType::Owned;
   }
   return new_component;
 }
@@ -257,7 +258,7 @@ void MeshComponent::clear()
 {
   BLI_assert(this->is_mutable());
   if (mesh_ != nullptr) {
-    if (owned_) {
+    if (ownership_ == GeometryOwnershipType::Owned) {
       BKE_id_free(nullptr, mesh_);
     }
     mesh_ = nullptr;
@@ -270,12 +271,12 @@ bool MeshComponent::has_mesh() const
 }
 
 /* Clear the component and replace it with the new mesh. */
-void MeshComponent::replace(Mesh *mesh, bool transfer_ownership)
+void MeshComponent::replace(Mesh *mesh, GeometryOwnershipType ownership)
 {
   BLI_assert(this->is_mutable());
   this->clear();
   mesh_ = mesh;
-  owned_ = transfer_ownership;
+  ownership_ = ownership;
 }
 
 /* Return the mesh and clear the component. The caller takes over responsibility for freeing the
@@ -300,6 +301,10 @@ const Mesh *MeshComponent::get_for_read() const
 Mesh *MeshComponent::get_for_write()
 {
   BLI_assert(this->is_mutable());
+  if (ownership_ == GeometryOwnershipType::ReadOnly) {
+    mesh_ = BKE_mesh_copy_for_eval(mesh_, false);
+    ownership_ = GeometryOwnershipType::Owned;
+  }
   return mesh_;
 }
 
@@ -319,7 +324,7 @@ GeometryComponent *PointCloudComponent::copy() const
   PointCloudComponent *new_component = new PointCloudComponent();
   if (pointcloud_ != nullptr) {
     new_component->pointcloud_ = BKE_pointcloud_copy_for_eval(pointcloud_, false);
-    new_component->owned_ = true;
+    new_component->ownership_ = GeometryOwnershipType::Owned;
   }
   return new_component;
 }
@@ -328,7 +333,7 @@ void PointCloudComponent::clear()
 {
   BLI_assert(this->is_mutable());
   if (pointcloud_ != nullptr) {
-    if (owned_) {
+    if (ownership_ == GeometryOwnershipType::Owned) {
       BKE_id_free(nullptr, pointcloud_);
     }
     pointcloud_ = nullptr;
@@ -341,12 +346,12 @@ bool PointCloudComponent::has_pointcloud() const
 }
 
 /* Clear the component and replace it with the new point cloud. */
-void PointCloudComponent::replace(PointCloud *pointcloud, bool transfer_ownership)
+void PointCloudComponent::replace(PointCloud *pointcloud, GeometryOwnershipType ownership)
 {
   BLI_assert(this->is_mutable());
   this->clear();
   pointcloud_ = pointcloud;
-  owned_ = transfer_ownership;
+  ownership_ = ownership;
 }
 
 /* Return the point cloud and clear the component. The caller takes over responsibility for freeing
@@ -373,6 +378,10 @@ const PointCloud *PointCloudComponent::get_for_read() const
 PointCloud *PointCloudComponent::get_for_write()
 {
   BLI_assert(this->is_mutable());
+  if (ownership_ == GeometryOwnershipType::ReadOnly) {
+    pointcloud_ = BKE_pointcloud_copy_for_eval(pointcloud_, false);
+    ownership_ = GeometryOwnershipType::Owned;
+  }
   return pointcloud_;
 }
 

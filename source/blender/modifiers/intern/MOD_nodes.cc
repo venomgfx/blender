@@ -844,7 +844,8 @@ static GeometrySetPtr modifyGeometry(ModifierData *md,
 
 static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mesh)
 {
-  GeometrySetPtr input_geometry_set = GeometrySet::create_with_mesh(mesh, false);
+  GeometrySetPtr input_geometry_set = GeometrySet::create_with_mesh(
+      mesh, GeometryOwnershipType::Editable);
   GeometrySetPtr output_geometry_set = modifyGeometry(md, ctx, std::move(input_geometry_set));
   Mesh *new_mesh = output_geometry_set->get_component_for_write<MeshComponent>().release();
   if (new_mesh == nullptr) {

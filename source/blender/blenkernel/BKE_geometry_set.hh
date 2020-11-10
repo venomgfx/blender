@@ -48,6 +48,15 @@ enum class GeometryComponentType {
   Instances,
 };
 
+enum class GeometryOwnershipType {
+  /* The geometry is owned. This implies that it can be changed. */
+  Owned,
+  /* The geometry can be changed, but someone else is responsible for freeing it. */
+  Editable,
+  /* The geometry cannot be changed and someone else is responsible for freeing it. */
+  ReadOnly,
+};
+
 }  // namespace blender::bke
 
 /* Make it possible to use the component type as key in hash tables. */
@@ -132,9 +141,10 @@ class GeometrySet {
   }
 
   /* Utility methods for creation. */
-  static GeometrySetPtr create_with_mesh(Mesh *mesh, bool transfer_ownership = true);
-  static GeometrySetPtr create_with_pointcloud(PointCloud *pointcloud,
-                                               bool transfer_ownership = true);
+  static GeometrySetPtr create_with_mesh(
+      Mesh *mesh, GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
+  static GeometrySetPtr create_with_pointcloud(
+      PointCloud *pointcloud, GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
 
   /* Utility methods for access. */
   bool has_mesh() const;
@@ -145,8 +155,9 @@ class GeometrySet {
   PointCloud *get_pointcloud_for_write();
 
   /* Utility methods for replacement. */
-  void replace_mesh(Mesh *mesh, bool transfer_ownership = true);
-  void replace_pointcloud(PointCloud *pointcloud, bool transfer_ownership = true);
+  void replace_mesh(Mesh *mesh, GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
+  void replace_pointcloud(PointCloud *pointcloud,
+                          GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
 };
 
 void make_geometry_set_mutable(GeometrySetPtr &geometry);
@@ -155,7 +166,7 @@ void make_geometry_set_mutable(GeometrySetPtr &geometry);
 class MeshComponent : public GeometryComponent {
  private:
   Mesh *mesh_ = nullptr;
-  bool owned_ = false;
+  GeometryOwnershipType ownership_ = GeometryOwnershipType::Owned;
 
  public:
   ~MeshComponent();
@@ -163,7 +174,7 @@ class MeshComponent : public GeometryComponent {
 
   void clear();
   bool has_mesh() const;
-  void replace(Mesh *mesh, bool transfer_ownership = true);
+  void replace(Mesh *mesh, GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
   Mesh *release();
 
   const Mesh *get_for_read() const;
@@ -176,7 +187,7 @@ class MeshComponent : public GeometryComponent {
 class PointCloudComponent : public GeometryComponent {
  private:
   PointCloud *pointcloud_ = nullptr;
-  bool owned_ = false;
+  GeometryOwnershipType ownership_ = GeometryOwnershipType::Owned;
 
  public:
   ~PointCloudComponent();
@@ -184,7 +195,8 @@ class PointCloudComponent : public GeometryComponent {
 
   void clear();
   bool has_pointcloud() const;
-  void replace(PointCloud *pointcloud, bool transfer_ownership = true);
+  void replace(PointCloud *pointcloud,
+               GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
   PointCloud *release();
 
   const PointCloud *get_for_read() const;

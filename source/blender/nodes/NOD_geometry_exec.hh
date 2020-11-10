@@ -25,6 +25,7 @@
 
 namespace blender::nodes {
 
+using bke::GeometryOwnershipType;
 using bke::GeometrySet;
 using bke::GeometrySetPtr;
 using bke::make_geometry_set_mutable;
