@@ -1285,8 +1285,7 @@ bool BKE_object_support_modifier_type_check(const Object *ob, int modifier_type)
     return (mti->modifyHair != NULL) || (mti->flags & eModifierTypeFlag_AcceptsVertexCosOnly);
   }
   if (ob->type == OB_POINTCLOUD) {
-    return (mti->modifyPointCloud != NULL) ||
-           (mti->flags & eModifierTypeFlag_AcceptsVertexCosOnly);
+    return (mti->modifyPointCloud != NULL);
   }
   if (ob->type == OB_VOLUME) {
     return (mti->modifyVolume != NULL);
@@ -1558,6 +1557,7 @@ void BKE_object_free_derived_caches(Object *ob)
 
   if (ob->runtime.geometry_set_eval != NULL) {
     BKE_geometry_set_user_remove(ob->runtime.geometry_set_eval);
+    ob->runtime.geometry_set_eval = NULL;
   }
 }
 

@@ -130,6 +130,8 @@ class GeometrySet {
 
   /* Utility methods for creation. */
   static GeometrySetPtr create_with_mesh(Mesh *mesh, bool transfer_ownership = true);
+  static GeometrySetPtr create_with_pointcloud(PointCloud *pointcloud,
+                                               bool transfer_ownership = true);
 
   /* Utility methods for access. */
   bool has_mesh() const;
@@ -187,5 +189,15 @@ class PointCloudComponent : public GeometryComponent {
 
   static constexpr inline GeometryComponentType type = GeometryComponentType::PointCloud;
 };
+
+inline GeometrySetC *wrap(blender::bke::GeometrySet *geometry_set)
+{
+  return reinterpret_cast<GeometrySetC *>(geometry_set);
+}
+
+inline blender::bke::GeometrySet *unwrap(GeometrySetC *geometry_set_c)
+{
+  return reinterpret_cast<blender::bke::GeometrySet *>(geometry_set_c);
+}
 
 }  // namespace blender::bke

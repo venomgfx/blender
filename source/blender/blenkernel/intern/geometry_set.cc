@@ -162,13 +162,21 @@ bool GeometrySet::has_pointcloud() const
   return component != nullptr && component->has_pointcloud();
 }
 
-/* Create a new geometry set that only contains the given mesh. Ownership of the mesh is
- * transferred to the new geometry. */
+/* Create a new geometry set that only contains the given mesh. */
 GeometrySetPtr GeometrySet::create_with_mesh(Mesh *mesh, bool transfer_ownership)
 {
   GeometrySet *geometry_set = new GeometrySet();
   MeshComponent &component = geometry_set->get_component_for_write<MeshComponent>();
   component.replace(mesh, transfer_ownership);
+  return geometry_set;
+}
+
+/* Create a new geometry set that only contains the given point cloud. */
+GeometrySetPtr GeometrySet::create_with_pointcloud(PointCloud *pointcloud, bool transfer_ownership)
+{
+  GeometrySet *geometry_set = new GeometrySet();
+  PointCloudComponent &component = geometry_set->get_component_for_write<PointCloudComponent>();
+  component.replace(pointcloud, transfer_ownership);
   return geometry_set;
 }
 
@@ -374,19 +382,14 @@ PointCloud *PointCloudComponent::get_for_write()
 /** \name C API
  * \{ */
 
-static blender::bke::GeometrySet *unwrap(GeometrySetC *geometry_set)
-{
-  return reinterpret_cast<blender::bke::GeometrySet *>(geometry_set);
-}
-
 void BKE_geometry_set_user_add(GeometrySetC *geometry_set)
 {
-  unwrap(geometry_set)->user_add();
+  blender::bke::unwrap(geometry_set)->user_add();
 }
 
 void BKE_geometry_set_user_remove(GeometrySetC *geometry_set)
 {
-  unwrap(geometry_set)->user_remove();
+  blender::bke::unwrap(geometry_set)->user_remove();
 }
 
 /** \} */
