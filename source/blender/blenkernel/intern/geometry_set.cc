@@ -164,6 +164,13 @@ bool GeometrySet::has_pointcloud() const
   return component != nullptr && component->has_pointcloud();
 }
 
+/* Returns true when the geometry set has an instances component that has at least one instance. */
+bool GeometrySet::has_instances() const
+{
+  const InstancesComponent *component = this->get_component_for_read<InstancesComponent>();
+  return component != nullptr && component->instances_amount() >= 1;
+}
+
 /* Create a new geometry set that only contains the given mesh. */
 GeometrySetPtr GeometrySet::create_with_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
@@ -419,6 +426,11 @@ Span<const Object *> InstancesComponent::objects() const
 }
 
 Span<float3> InstancesComponent::positions() const
+{
+  return positions_;
+}
+
+MutableSpan<float3> InstancesComponent::positions()
 {
   return positions_;
 }

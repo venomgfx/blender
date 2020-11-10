@@ -149,6 +149,7 @@ class GeometrySet {
   /* Utility methods for access. */
   bool has_mesh() const;
   bool has_pointcloud() const;
+  bool has_instances() const;
   const Mesh *get_mesh_for_read() const;
   const PointCloud *get_pointcloud_for_read() const;
   Mesh *get_mesh_for_write();
@@ -220,6 +221,7 @@ class InstancesComponent : public GeometryComponent {
 
   Span<const Object *> objects() const;
   Span<float3> positions() const;
+  MutableSpan<float3> positions();
   int instances_amount() const;
 
   static constexpr inline GeometryComponentType type = GeometryComponentType::Instances;
