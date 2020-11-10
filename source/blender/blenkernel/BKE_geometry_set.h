@@ -27,7 +27,6 @@ extern "C" {
 struct Object;
 
 typedef struct GeometrySetC GeometrySetC;
-typedef struct InstancesComponentC InstancesComponentC;
 
 void BKE_geometry_set_user_add(GeometrySetC *geometry_set_c);
 void BKE_geometry_set_user_remove(GeometrySetC *geometry_set_c);

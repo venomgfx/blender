@@ -6965,11 +6965,6 @@ static void rna_def_modifier_nodes(BlenderRNA *brna)
   RNA_def_property_flag(prop, PROP_NEVER_NULL);
   RNA_def_property_ui_text(prop, "Settings", "Settings that are passed into the node group");
 
-  prop = RNA_def_property(srna, "instance_object_temp", PROP_POINTER, PROP_NONE);
-  RNA_def_property_ui_text(prop, "Instance Object Temp", "Object to instance");
-  RNA_def_property_flag(prop, PROP_EDITABLE | PROP_ID_SELF_CHECK);
-  RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
-
   RNA_define_lib_overridable(false);
 
   rna_def_modifier_nodes_settings(brna);

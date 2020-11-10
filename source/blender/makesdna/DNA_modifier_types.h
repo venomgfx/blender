@@ -2229,7 +2229,6 @@ typedef struct NodesModifierData {
   ModifierData modifier;
   struct bNodeTree *node_group;
   struct NodesModifierSettings settings;
-  struct Object *instance_object_temp;
 } NodesModifierData;
 
 typedef struct MeshToVolumeModifierData {

@@ -820,6 +820,9 @@ static void make_duplis_instances_component(const DupliContext *ctx)
 
   for (int i = 0; i < amount; i++) {
     Object *object = objects[i];
+    if (object == NULL) {
+      continue;
+    }
     float mat[4][4];
     unit_m4(mat);
     copy_v3_v3(mat[3], positions[i]);

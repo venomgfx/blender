@@ -31,6 +31,7 @@ static const NodeTreeRef &get_tree_ref(NodeTreeRefMap &node_tree_refs, bNodeTree
 DerivedNodeTree::DerivedNodeTree(bNodeTree *btree, NodeTreeRefMap &node_tree_refs)
 {
   const NodeTreeRef &main_tree_ref = get_tree_ref(node_tree_refs, btree);
+  used_node_tree_refs_.add_new(&main_tree_ref);
 
   Vector<DNode *> all_nodes;
   Vector<DGroupInput *> all_group_inputs;
@@ -137,6 +138,7 @@ BLI_NOINLINE void DerivedNodeTree::expand_group_node(DNode &group_node,
   }
 
   const NodeTreeRef &group_ref = get_tree_ref(node_tree_refs, btree);
+  used_node_tree_refs_.add(&group_ref);
 
   DParentNode &parent = *allocator_.construct<DParentNode>();
   parent.id_ = all_parent_nodes.append_and_get_index(&parent);

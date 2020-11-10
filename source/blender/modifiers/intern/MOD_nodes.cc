@@ -89,10 +89,6 @@ static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphConte
   if (nmd->node_group != nullptr) {
     DEG_add_node_tree_relation(ctx->node, nmd->node_group, "Nodes Modifier");
   }
-  if (nmd->instance_object_temp) {
-    DEG_add_object_relation(
-        ctx->node, nmd->instance_object_temp, DEG_OB_COMP_GEOMETRY, "nodes modifier");
-  }
 
   /* TODO: Add relations for IDs in settings. */
 }
@@ -101,7 +97,6 @@ static void foreachIDLink(ModifierData *md, Object *ob, IDWalkFunc walk, void *u
 {
   NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
   walk(userData, ob, (ID **)&nmd->node_group, IDWALK_CB_USER);
-  walk(userData, ob, (ID **)&nmd->instance_object_temp, IDWALK_CB_USER);
 
   struct ForeachSettingData {
     IDWalkFunc walk;
@@ -142,14 +137,17 @@ class GeometryNodesEvaluator {
   Vector<const DInputSocket *> group_outputs_;
   MultiFunctionByNode &mf_by_node_;
   const DataTypeConversions &conversions_;
+  const PersistentDataHandleMap &handle_map_;
 
  public:
   GeometryNodesEvaluator(const Map<const DOutputSocket *, GMutablePointer> &group_input_data,
                          Vector<const DInputSocket *> group_outputs,
-                         MultiFunctionByNode &mf_by_node)
+                         MultiFunctionByNode &mf_by_node,
+                         const PersistentDataHandleMap &handle_map)
       : group_outputs_(std::move(group_outputs)),
         mf_by_node_(mf_by_node),
-        conversions_(get_implicit_type_conversions())
+        conversions_(get_implicit_type_conversions()),
+        handle_map_(handle_map)
   {
     for (auto item : group_input_data.items()) {
       this->forward_to_inputs(*item.key, item.value);
@@ -187,17 +185,11 @@ class GeometryNodesEvaluator {
 
     if (total_inputs == 0) {
       /* The input is not connected, use the value from the socket itself. */
-      bNodeSocket &bsocket = *socket_to_compute.bsocket();
-      void *buffer = allocator_.allocate(type.size(), type.alignment());
-      socket_cpp_value_get(bsocket, buffer);
-      return GMutablePointer{type, buffer};
+      return get_unlinked_input_value(socket_to_compute);
     }
     if (from_group_inputs.size() == 1) {
       /* The input gets its value from the input of a group that is not further connected. */
-      bNodeSocket &bsocket = *from_group_inputs[0]->bsocket();
-      void *buffer = allocator_.allocate(type.size(), type.alignment());
-      socket_cpp_value_get(bsocket, buffer);
-      return GMutablePointer{type, buffer};
+      return get_unlinked_input_value(socket_to_compute);
     }
 
     /* Compute the socket now. */
@@ -222,7 +214,7 @@ class GeometryNodesEvaluator {
 
     /* Execute the node. */
     GValueMap<StringRef> node_outputs_map{allocator_};
-    GeoNodeInputs node_inputs{bnode, node_inputs_map};
+    GeoNodeInputs node_inputs{bnode, node_inputs_map, handle_map_};
     GeoNodeOutputs node_outputs{bnode, node_outputs_map};
     this->execute_node(node, node_inputs, node_outputs);
 
@@ -321,6 +313,30 @@ class GeometryNodesEvaluator {
         value_by_input_.add_new(to_socket, GMutablePointer{type, buffer});
       }
     }
+  }
+
+  GMutablePointer get_unlinked_input_value(const DInputSocket &socket)
+  {
+    bNodeSocket *bsocket;
+    if (socket.linked_group_inputs().size() == 0) {
+      bsocket = socket.bsocket();
+    }
+    else {
+      bsocket = socket.linked_group_inputs()[0]->bsocket();
+    }
+    const CPPType &type = *socket_cpp_type_get(*socket.typeinfo());
+    void *buffer = allocator_.allocate(type.size(), type.alignment());
+
+    if (bsocket->type == SOCK_OBJECT) {
+      Object *object = ((bNodeSocketValueObject *)bsocket->default_value)->value;
+      PersistentObjectHandle object_handle = handle_map_.lookup(object);
+      new (buffer) PersistentObjectHandle(object_handle);
+    }
+    else {
+      socket_cpp_value_get(*bsocket, buffer);
+    }
+
+    return {type, buffer};
   }
 };
 
@@ -642,6 +658,23 @@ static void initialize_group_input(NodesModifierData &nmd,
   property_type->init_cpp_value(*property, r_value);
 }
 
+static void fill_data_handle_map(const DerivedNodeTree &tree, PersistentDataHandleMap &handle_map)
+{
+  int current_handle = 0;
+  for (const NodeTreeRef *tree_ref : tree.used_node_tree_refs()) {
+    for (const SocketRef *socket_ref : tree_ref->sockets()) {
+      const bNodeSocket *bsocket = socket_ref->bsocket();
+      if (bsocket->type == SOCK_OBJECT) {
+        Object *object = ((bNodeSocketValueObject *)bsocket->default_value)->value;
+        if (object != nullptr) {
+          handle_map.add(current_handle, object->id);
+          current_handle++;
+        }
+      }
+    }
+  }
+}
+
 /**
  * Evaluate a node group to compute the output geometry.
  * Currently, this uses a fairly basic and inefficient algorithm that might compute things more
@@ -684,7 +717,10 @@ static GeometrySetPtr compute_geometry(const DerivedNodeTree &tree,
   Vector<const DInputSocket *> group_outputs;
   group_outputs.append(&socket_to_compute);
 
-  GeometryNodesEvaluator evaluator{group_inputs, group_outputs, mf_by_node};
+  PersistentDataHandleMap handle_map;
+  fill_data_handle_map(tree, handle_map);
+
+  GeometryNodesEvaluator evaluator{group_inputs, group_outputs, mf_by_node, handle_map};
   Vector<GMutablePointer> results = evaluator.execute();
   BLI_assert(results.size() == 1);
   GMutablePointer result = results[0];
@@ -789,21 +825,8 @@ static GeometrySetC *modifyPointCloud(ModifierData *md,
                                       const ModifierEvalContext *ctx,
                                       GeometrySetC *geometry_set_c)
 {
-  NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
-
   GeometrySetPtr input_geometry_set = unwrap(geometry_set_c);
   GeometrySetPtr output_geometry_set = modifyGeometry(md, ctx, std::move(input_geometry_set));
-
-  make_geometry_set_mutable(output_geometry_set);
-  InstancesComponent &component =
-      output_geometry_set->get_component_for_write<InstancesComponent>();
-  Vector<float3> positions;
-  positions.append({1, 2, 3});
-  positions.append({-1, 2, 3});
-  positions.append({-1, -2, 3});
-  positions.append({-1, -2, -3});
-  component.replace(positions, nmd->instance_object_temp);
-
   return wrap(output_geometry_set.release());
 }
 
@@ -845,7 +868,6 @@ static void panel_draw(const bContext *UNUSED(C), Panel *panel)
   uiLayoutSetPropDecorate(layout, false);
 
   uiItemR(layout, ptr, "node_group", 0, nullptr, ICON_MESH_DATA);
-  uiItemR(layout, ptr, "instance_object_temp", 0, nullptr, ICON_NONE);
 
   if (nmd->node_group != nullptr && nmd->settings.properties != nullptr) {
     PointerRNA settings_ptr;

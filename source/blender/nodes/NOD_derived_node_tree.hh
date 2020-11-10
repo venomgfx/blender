@@ -31,6 +31,8 @@
 
 #include "NOD_node_tree_ref.hh"
 
+#include "BLI_vector_set.hh"
+
 namespace blender::nodes {
 
 class DSocket;
@@ -184,6 +186,7 @@ class DerivedNodeTree : NonCopyable, NonMovable {
   Vector<DOutputSocket *> output_sockets_;
 
   MultiValueMap<const bNodeType *, DNode *> nodes_by_type_;
+  VectorSet<const NodeTreeRef *> used_node_tree_refs_;
 
  public:
   DerivedNodeTree(bNodeTree *btree, NodeTreeRefMap &node_tree_refs);
@@ -198,6 +201,8 @@ class DerivedNodeTree : NonCopyable, NonMovable {
   Span<const DOutputSocket *> output_sockets() const;
 
   Span<const DGroupInput *> group_inputs() const;
+
+  Span<const NodeTreeRef *> used_node_tree_refs() const;
 
   std::string to_dot() const;
 
@@ -526,6 +531,11 @@ inline Span<const DOutputSocket *> DerivedNodeTree::output_sockets() const
 inline Span<const DGroupInput *> DerivedNodeTree::group_inputs() const
 {
   return group_inputs_;
+}
+
+inline Span<const NodeTreeRef *> DerivedNodeTree::used_node_tree_refs() const
+{
+  return used_node_tree_refs_;
 }
 
 }  // namespace blender::nodes
