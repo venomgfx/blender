@@ -16,6 +16,8 @@
 
 #include "node_geometry_util.hh"
 
+#include "BKE_modifier.h"
+
 static bNodeSocketTemplate geo_node_object_info_in[] = {
     {SOCK_OBJECT, N_("Object")},
     {-1, ""},
@@ -25,6 +27,7 @@ static bNodeSocketTemplate geo_node_object_info_out[] = {
     {SOCK_VECTOR, N_("Location")},
     {SOCK_VECTOR, N_("Rotation")},
     {SOCK_VECTOR, N_("Scale")},
+    {SOCK_GEOMETRY, N_("Geometry")},
     {-1, ""},
 };
 
@@ -38,16 +41,23 @@ static void geo_object_info_exec(bNode *UNUSED(node), GeoNodeInputs inputs, GeoN
   float3 location = {0, 0, 0};
   float3 rotation = {0, 0, 0};
   float3 scale = {0, 0, 0};
+  GeometrySetPtr geometry_set;
 
   if (object != nullptr) {
     float quaternion[4];
     mat4_decompose(location, quaternion, scale, object->obmat);
     quat_to_eul(rotation, quaternion);
+
+    if (object->type == OB_MESH) {
+      Mesh *mesh = BKE_modifier_get_evaluated_mesh_from_evaluated_object(object, false);
+      geometry_set = GeometrySet::create_with_mesh(mesh, GeometryOwnershipType::ReadOnly);
+    }
   }
 
   outputs.set("Location", location);
   outputs.set("Rotation", rotation);
   outputs.set("Scale", scale);
+  outputs.set("Geometry", geometry_set);
 }
 }  // namespace blender::nodes
 
