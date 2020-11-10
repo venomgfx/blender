@@ -23,6 +23,8 @@ static bNodeSocketTemplate geo_node_object_info_in[] = {
 
 static bNodeSocketTemplate geo_node_object_info_out[] = {
     {SOCK_VECTOR, N_("Location")},
+    {SOCK_VECTOR, N_("Rotation")},
+    {SOCK_VECTOR, N_("Scale")},
     {-1, ""},
 };
 
@@ -34,12 +36,18 @@ static void geo_object_info_exec(bNode *UNUSED(node), GeoNodeInputs inputs, GeoN
   Object *object = inputs.handle_map().lookup(object_handle);
 
   float3 location = {0, 0, 0};
+  float3 rotation = {0, 0, 0};
+  float3 scale = {0, 0, 0};
 
   if (object != nullptr) {
-    location = object->obmat[3];
+    float quaternion[4];
+    mat4_decompose(location, quaternion, scale, object->obmat);
+    quat_to_eul(rotation, quaternion);
   }
 
   outputs.set("Location", location);
+  outputs.set("Rotation", rotation);
+  outputs.set("Scale", scale);
 }
 }  // namespace blender::nodes
 
