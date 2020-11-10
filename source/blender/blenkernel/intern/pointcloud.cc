@@ -384,7 +384,9 @@ void BKE_pointcloud_data_update(struct Depsgraph *depsgraph, struct Scene *scene
       depsgraph, scene, object, input_geometry_set);
 
   /* Assign evaluated object. */
+  /* Just use the original point cloud for now. */
   BKE_object_eval_assign_data(object, &pointcloud->id, false);
+
   BLI_assert(object->runtime.geometry_set_eval == nullptr);
   object->runtime.geometry_set_eval = wrap(geometry_set_eval.release());
 }

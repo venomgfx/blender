@@ -29,6 +29,7 @@
 #include "MEM_guardedalloc.h"
 
 #include "BKE_duplilist.h"
+#include "BKE_geometry_set.hh"
 #include "BKE_idprop.h"
 #include "BKE_layer.h"
 #include "BKE_node.h"
@@ -60,6 +61,7 @@
 #endif
 
 namespace deg = blender::deg;
+namespace bke = blender::bke;
 
 /* ************************ DEG ITERATORS ********************* */
 
@@ -235,6 +237,7 @@ void deg_iterator_objects_step(BLI_Iterator *iter, deg::IDNode *id_node)
   if (ob_visibility & (OB_VISIBLE_SELF | OB_VISIBLE_PARTICLES)) {
     iter->current = object;
     iter->skip = false;
+    data->geometry_set_finished = false;
   }
 }
 
@@ -261,6 +264,7 @@ void DEG_iterator_objects_begin(BLI_Iterator *iter, DEGObjectIterData *data)
   data->id_node_index = 0;
   data->num_id_nodes = num_id_nodes;
   data->eval_mode = DEG_get_mode(depsgraph);
+  data->geometry_set_finished = true;
   deg_invalidate_iterator_work_data(data);
 
   deg::IDNode *id_node = deg_graph->id_nodes[data->id_node_index];
@@ -290,6 +294,23 @@ void DEG_iterator_objects_next(BLI_Iterator *iter)
       data->dupli_object_next = nullptr;
       data->dupli_object_current = nullptr;
       deg_invalidate_iterator_work_data(data);
+    }
+
+    ID *current_id = deg_graph->id_nodes[data->id_node_index]->id_cow;
+    if (GS(current_id->name) == ID_OB) {
+      Object *current_object = (Object *)current_id;
+      if (current_object->runtime.geometry_set_eval != nullptr) {
+        if (!data->geometry_set_finished) {
+          bke::GeometrySet *geometry_set = bke::unwrap(current_object->runtime.geometry_set_eval);
+          PointCloud *pointcloud = (PointCloud *)geometry_set->get_pointcloud_for_read();
+          Object *temp_object = &data->temp_dupli_object;
+          *temp_object = *current_object;
+          temp_object->data = pointcloud;
+          iter->current = temp_object;
+          data->geometry_set_finished = true;
+          return;
+        }
+      }
     }
 
     ++data->id_node_index;
