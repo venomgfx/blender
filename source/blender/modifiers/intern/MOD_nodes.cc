@@ -29,6 +29,7 @@
 
 #include "BLI_float3.hh"
 #include "BLI_listbase.h"
+#include "BLI_set.hh"
 #include "BLI_string.h"
 #include "BLI_utildefines.h"
 
@@ -74,6 +75,12 @@
 
 using blender::float3;
 
+/* To be replaced soon. */
+using namespace blender;
+using namespace blender::nodes;
+using namespace blender::fn;
+using namespace blender::bke;
+
 static void initData(ModifierData *md)
 {
   NodesModifierData *nmd = (NodesModifierData *)md;
@@ -83,11 +90,49 @@ static void initData(ModifierData *md)
   MEMCPY_STRUCT_AFTER(nmd, DNA_struct_default_get(NodesModifierData), modifier);
 }
 
+static void addIdsUsedBySocket(const ListBase *sockets, Set<ID *> &ids)
+{
+  LISTBASE_FOREACH (const bNodeSocket *, socket, sockets) {
+    if (socket->type == SOCK_OBJECT) {
+      Object *object = ((bNodeSocketValueObject *)socket->default_value)->value;
+      if (object != nullptr) {
+        ids.add(&object->id);
+      }
+    }
+  }
+}
+
+static void findUsedIds(const bNodeTree &tree, Set<ID *> &ids)
+{
+  Set<const bNodeTree *> handled_groups;
+
+  LISTBASE_FOREACH (const bNode *, node, &tree.nodes) {
+    addIdsUsedBySocket(&node->inputs, ids);
+    addIdsUsedBySocket(&node->outputs, ids);
+
+    if (node->type == NODE_GROUP) {
+      const bNodeTree *group = (bNodeTree *)node->id;
+      if (group != nullptr && handled_groups.add(group)) {
+        findUsedIds(*group, ids);
+      }
+    }
+  }
+}
+
 static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphContext *ctx)
 {
   NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
   if (nmd->node_group != nullptr) {
     DEG_add_node_tree_relation(ctx->node, nmd->node_group, "Nodes Modifier");
+
+    Set<ID *> used_ids;
+    findUsedIds(*nmd->node_group, used_ids);
+    for (ID *id : used_ids) {
+      if (GS(id->name) == ID_OB) {
+        DEG_add_object_relation(ctx->node, (Object *)id, DEG_OB_COMP_TRANSFORM, "Nodes Modifier");
+        DEG_add_object_relation(ctx->node, (Object *)id, DEG_OB_COMP_GEOMETRY, "Nodes Modifier");
+      }
+    }
   }
 
   /* TODO: Add relations for IDs in settings. */
@@ -123,12 +168,6 @@ static bool isDisabled(const struct Scene *UNUSED(scene),
   UNUSED_VARS(nmd);
   return false;
 }
-
-/* To be replaced soon. */
-using namespace blender;
-using namespace blender::nodes;
-using namespace blender::fn;
-using namespace blender::bke;
 
 class GeometryNodesEvaluator {
  private:
@@ -180,8 +219,6 @@ class GeometryNodesEvaluator {
     Span<const DGroupInput *> from_group_inputs = socket_to_compute.linked_group_inputs();
     const int total_inputs = from_sockets.size() + from_group_inputs.size();
     BLI_assert(total_inputs <= 1);
-
-    const CPPType &type = *socket_cpp_type_get(*socket_to_compute.typeinfo());
 
     if (total_inputs == 0) {
       /* The input is not connected, use the value from the socket itself. */
@@ -660,18 +697,13 @@ static void initialize_group_input(NodesModifierData &nmd,
 
 static void fill_data_handle_map(const DerivedNodeTree &tree, PersistentDataHandleMap &handle_map)
 {
+  Set<ID *> used_ids;
+  findUsedIds(*tree.btree(), used_ids);
+
   int current_handle = 0;
-  for (const NodeTreeRef *tree_ref : tree.used_node_tree_refs()) {
-    for (const SocketRef *socket_ref : tree_ref->sockets()) {
-      const bNodeSocket *bsocket = socket_ref->bsocket();
-      if (bsocket->type == SOCK_OBJECT) {
-        Object *object = ((bNodeSocketValueObject *)bsocket->default_value)->value;
-        if (object != nullptr) {
-          handle_map.add(current_handle, object->id);
-          current_handle++;
-        }
-      }
-    }
+  for (ID *id : used_ids) {
+    handle_map.add(current_handle, *id);
+    current_handle++;
   }
 }
 

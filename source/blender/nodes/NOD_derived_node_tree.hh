@@ -187,10 +187,13 @@ class DerivedNodeTree : NonCopyable, NonMovable {
 
   MultiValueMap<const bNodeType *, DNode *> nodes_by_type_;
   VectorSet<const NodeTreeRef *> used_node_tree_refs_;
+  bNodeTree *btree_;
 
  public:
   DerivedNodeTree(bNodeTree *btree, NodeTreeRefMap &node_tree_refs);
   ~DerivedNodeTree();
+
+  bNodeTree *btree() const;
 
   Span<const DNode *> nodes() const;
   Span<const DNode *> nodes_by_type(StringRefNull idname) const;
@@ -496,6 +499,11 @@ inline int DParentNode::id() const
 /* --------------------------------------------------------------------
  * DerivedNodeTree inline methods.
  */
+
+inline bNodeTree *DerivedNodeTree::btree() const
+{
+  return btree_;
+}
 
 inline Span<const DNode *> DerivedNodeTree::nodes() const
 {

@@ -28,8 +28,10 @@ static const NodeTreeRef &get_tree_ref(NodeTreeRefMap &node_tree_refs, bNodeTree
                                           [&]() { return std::make_unique<NodeTreeRef>(btree); });
 }
 
-DerivedNodeTree::DerivedNodeTree(bNodeTree *btree, NodeTreeRefMap &node_tree_refs)
+DerivedNodeTree::DerivedNodeTree(bNodeTree *btree, NodeTreeRefMap &node_tree_refs) : btree_(btree)
 {
+  BLI_assert(btree != nullptr);
+
   const NodeTreeRef &main_tree_ref = get_tree_ref(node_tree_refs, btree);
   used_node_tree_refs_.add_new(&main_tree_ref);
 
