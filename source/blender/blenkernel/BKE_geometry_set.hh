@@ -43,18 +43,18 @@ using GeometrySetPtr = UserCounter<class GeometrySet>;
  * stores. Functions modifying a geometry will usually just modify a subset of the component types.
  */
 enum class GeometryComponentType {
-  Mesh,
-  PointCloud,
-  Instances,
+  Mesh = 0,
+  PointCloud = 1,
+  Instances = 2,
 };
 
 enum class GeometryOwnershipType {
   /* The geometry is owned. This implies that it can be changed. */
-  Owned,
+  Owned = 0,
   /* The geometry can be changed, but someone else is responsible for freeing it. */
-  Editable,
+  Editable = 1,
   /* The geometry cannot be changed and someone else is responsible for freeing it. */
-  ReadOnly,
+  ReadOnly = 2,
 };
 
 }  // namespace blender::bke

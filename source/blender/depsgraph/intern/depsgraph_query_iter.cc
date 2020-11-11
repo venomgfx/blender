@@ -237,7 +237,15 @@ void deg_iterator_objects_step(BLI_Iterator *iter, deg::IDNode *id_node)
 
   if (ob_visibility & (OB_VISIBLE_SELF | OB_VISIBLE_PARTICLES)) {
     iter->current = object;
-    iter->skip = false;
+    if (object->runtime.geometry_set_eval) {
+      data->geometry_set_c = object->runtime.geometry_set_eval;
+      data->next_geometry_set_component = (int)bke::GeometryComponentType::Mesh;
+      data->geometry_set_owner = object;
+      iter->skip = true;
+    }
+    else {
+      iter->skip = false;
+    }
   }
 }
 
@@ -264,6 +272,9 @@ void DEG_iterator_objects_begin(BLI_Iterator *iter, DEGObjectIterData *data)
   data->id_node_index = 0;
   data->num_id_nodes = num_id_nodes;
   data->eval_mode = DEG_get_mode(depsgraph);
+  data->next_geometry_set_component = 0;
+  data->geometry_set_owner = nullptr;
+  data->geometry_set_c = nullptr;
   deg_invalidate_iterator_work_data(data);
 
   deg::IDNode *id_node = deg_graph->id_nodes[data->id_node_index];
@@ -281,6 +292,35 @@ void DEG_iterator_objects_next(BLI_Iterator *iter)
   deg::Depsgraph *deg_graph = reinterpret_cast<deg::Depsgraph *>(depsgraph);
   do {
     iter->skip = false;
+
+    if (data->geometry_set_c != nullptr) {
+      bke::GeometrySet *geometry_set = bke::unwrap(data->geometry_set_c);
+      if (data->next_geometry_set_component == (int)bke::GeometryComponentType::Mesh) {
+        data->next_geometry_set_component = (int)bke::GeometryComponentType::PointCloud;
+        const Mesh *mesh = geometry_set->get_mesh_for_read();
+        if (mesh != nullptr) {
+          Object *temp_object = &data->temp_dupli_object;
+          *temp_object = *data->geometry_set_owner;
+          temp_object->type = OB_MESH;
+          temp_object->data = (void *)mesh;
+          iter->current = temp_object;
+          return;
+        }
+      }
+      if (data->next_geometry_set_component == (int)bke::GeometryComponentType::PointCloud) {
+        data->geometry_set_c = nullptr;
+        const PointCloud *pointcloud = geometry_set->get_pointcloud_for_read();
+        if (pointcloud != nullptr) {
+          Object *temp_object = &data->temp_dupli_object;
+          *temp_object = *data->geometry_set_owner;
+          temp_object->type = OB_POINTCLOUD;
+          temp_object->data = (void *)pointcloud;
+          iter->current = temp_object;
+          return;
+        }
+      }
+    }
+
     if (data->dupli_list) {
       if (deg_objects_dupli_iterator_next(iter)) {
         return;

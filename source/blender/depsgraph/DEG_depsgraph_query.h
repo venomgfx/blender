@@ -42,6 +42,7 @@ struct ListBase;
 struct PointerRNA;
 struct Scene;
 struct ViewLayer;
+struct GeometrySetC;
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,6 +145,11 @@ typedef struct DEGObjectIterData {
   struct Scene *scene;
 
   eEvaluationMode eval_mode;
+
+  /* **** Iteration over geometry components **** */
+  struct Object *geometry_set_owner;
+  struct GeometrySetC *geometry_set_c;
+  int next_geometry_set_component;
 
   /* **** Iteration over dupli-list. *** */
 
