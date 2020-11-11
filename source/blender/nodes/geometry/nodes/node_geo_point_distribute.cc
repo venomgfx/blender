@@ -145,6 +145,10 @@ static void geo_point_distribute_exec(bNode *UNUSED(node),
 
   PointCloud *pointcloud = BKE_pointcloud_new_nomain(points.size());
   memcpy(pointcloud->co, points.data(), sizeof(float3) * points.size());
+  for (const int i : points.index_range()) {
+    *(float3 *)(pointcloud->co + i) = points[i];
+    pointcloud->radius[i] = 0.05f;
+  }
 
   make_geometry_set_mutable(geometry_set);
   geometry_set->replace_mesh(nullptr);

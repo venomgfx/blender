@@ -16,6 +16,7 @@
 
 #include "node_geometry_util.hh"
 
+#include "BKE_mesh.h"
 #include "BKE_mesh_wrapper.h"
 #include "BKE_modifier.h"
 
@@ -53,7 +54,9 @@ static void geo_object_info_exec(bNode *UNUSED(node), GeoNodeInputs inputs, GeoN
       Mesh *mesh = BKE_modifier_get_evaluated_mesh_from_evaluated_object(object, false);
       if (mesh != nullptr) {
         BKE_mesh_wrapper_ensure_mdata(mesh);
-        geometry_set = GeometrySet::create_with_mesh(mesh, GeometryOwnershipType::ReadOnly);
+        /* Make a copy because the life time of the other mesh might be shorter. */
+        Mesh *copied_mesh = BKE_mesh_copy_for_eval(mesh, false);
+        geometry_set = GeometrySet::create_with_mesh(copied_mesh);
       }
     }
   }
