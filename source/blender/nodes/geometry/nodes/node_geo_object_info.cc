@@ -16,6 +16,7 @@
 
 #include "node_geometry_util.hh"
 
+#include "BKE_mesh_wrapper.h"
 #include "BKE_modifier.h"
 
 static bNodeSocketTemplate geo_node_object_info_in[] = {
@@ -50,7 +51,10 @@ static void geo_object_info_exec(bNode *UNUSED(node), GeoNodeInputs inputs, GeoN
 
     if (object->type == OB_MESH) {
       Mesh *mesh = BKE_modifier_get_evaluated_mesh_from_evaluated_object(object, false);
-      geometry_set = GeometrySet::create_with_mesh(mesh, GeometryOwnershipType::ReadOnly);
+      if (mesh != nullptr) {
+        BKE_mesh_wrapper_ensure_mdata(mesh);
+        geometry_set = GeometrySet::create_with_mesh(mesh, GeometryOwnershipType::ReadOnly);
+      }
     }
   }
 
