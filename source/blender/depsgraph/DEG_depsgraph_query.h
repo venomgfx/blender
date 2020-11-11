@@ -42,7 +42,6 @@ struct ListBase;
 struct PointerRNA;
 struct Scene;
 struct ViewLayer;
-struct GeometrySetC;
 
 #ifdef __cplusplus
 extern "C" {
