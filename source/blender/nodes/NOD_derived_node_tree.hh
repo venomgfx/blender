@@ -207,6 +207,8 @@ class DerivedNodeTree : NonCopyable, NonMovable {
 
   Span<const NodeTreeRef *> used_node_tree_refs() const;
 
+  bool has_link_cycles() const;
+
   std::string to_dot() const;
 
  private:

@@ -362,6 +362,16 @@ DerivedNodeTree::~DerivedNodeTree()
   }
 }
 
+bool DerivedNodeTree::has_link_cycles() const
+{
+  for (const NodeTreeRef *tree : used_node_tree_refs_) {
+    if (tree->has_link_cycles()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static dot::Cluster *get_cluster_for_parent(dot::DirectedGraph &graph,
                                             Map<const DParentNode *, dot::Cluster *> &clusters,
                                             const DParentNode *parent)
