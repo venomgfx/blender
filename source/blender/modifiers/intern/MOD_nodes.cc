@@ -853,6 +853,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   GeometrySetPtr input_geometry_set = GeometrySet::create_with_mesh(
       mesh, GeometryOwnershipType::Editable);
   GeometrySetPtr output_geometry_set = modifyGeometry(md, ctx, std::move(input_geometry_set));
+  if (!output_geometry_set.has_value()) {
+    return BKE_mesh_new_nomain(0, 0, 0, 0, 0);
+  }
   Mesh *new_mesh = output_geometry_set->get_component_for_write<MeshComponent>().release();
   if (new_mesh == nullptr) {
     return BKE_mesh_new_nomain(0, 0, 0, 0, 0);
