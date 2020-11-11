@@ -15,6 +15,7 @@
  */
 
 #include "BLI_float3.hh"
+#include "BLI_hash.h"
 #include "BLI_math_vector.h"
 #include "BLI_rand.hh"
 #include "BLI_span.hh"
@@ -43,77 +44,40 @@ static bNodeSocketTemplate geo_node_point_distribute_out[] = {
 
 namespace blender::nodes {
 
-static void mesh_loop_tri_corner_coords(
-    const Mesh *mesh, const int index, float **r_v0, float **r_v1, float **r_v2)
-{
-  MVert *mverts = mesh->mvert;
-  MLoop *mloops = mesh->mloop;
-
-  MLoopTri looptri = mesh->runtime.looptris.array[index];
-  const MLoop *mloop_0 = &mloops[looptri.tri[0]];
-  const MLoop *mloop_1 = &mloops[looptri.tri[1]];
-  const MLoop *mloop_2 = &mloops[looptri.tri[2]];
-  *r_v0 = mverts[mloop_0->v].co;
-  *r_v1 = mverts[mloop_1->v].co;
-  *r_v2 = mverts[mloop_2->v].co;
-}
-
 static Vector<float3> scatter_points_from_mesh(const Mesh *mesh,
                                                const float density,
                                                const float UNUSED(minimum_radius))
 {
   /* This only updates a cache and can be considered to be logically const. */
-  BKE_mesh_runtime_looptri_ensure(const_cast<Mesh *>(mesh));
-  const int looptris_len = mesh->runtime.looptris.len;
-  blender::Array<float> weights(looptris_len);
+  const MLoopTri *looptris = BKE_mesh_runtime_looptri_ensure(const_cast<Mesh *>(mesh));
+  const int looptris_len = BKE_mesh_runtime_looptri_len(mesh);
 
-  /* Calculate area for every triangle and the total area for the whole mesh. */
-  float area_total = 0.0f;
-  for (int i = 0; i < looptris_len; i++) {
-    float *v0, *v1, *v2;
-    mesh_loop_tri_corner_coords(mesh, i, &v0, &v1, &v2);
-    const float tri_area = area_tri_v3(v0, v1, v2);
-
-    weights[i] = tri_area;
-    area_total += tri_area;
-  }
-
-  /* Fill an array with the sums of each weight. No need to normalize by the area of the largest
-   * triangle since it's all relative anyway. Reuse the orginal weights array to avoid allocating
-   * another.
-   *
-   * TODO: Multiply by a vertex group / attribute here as well. */
-  float weight_total = 0.0f;
-  for (int i = 0; i < looptris_len; i++) {
-    weight_total += weights[i];
-    weights[i] = weight_total;
-  }
-
-  /* Calculate the total number of points and create the pointcloud. */
-  const int points_len = round_fl_to_int(area_total * density);
   Vector<float3> points;
-  points.reserve(points_len);
 
-  /* Distribute the points. */
-  blender::RandomNumberGenerator rng(0);
-  for (int i = 0; i < points_len; i++) {
-    const int random_weight_total = rng.get_float() * weight_total;
+  for (const int looptri_index : IndexRange(looptris_len)) {
+    const MLoopTri &looptri = looptris[looptri_index];
+    const int v0_index = mesh->mloop[looptri.tri[0]].v;
+    const int v1_index = mesh->mloop[looptri.tri[1]].v;
+    const int v2_index = mesh->mloop[looptri.tri[2]].v;
+    const float3 v0_pos = mesh->mvert[v0_index].co;
+    const float3 v1_pos = mesh->mvert[v1_index].co;
+    const float3 v2_pos = mesh->mvert[v2_index].co;
+    const float area = area_tri_v3(v0_pos, v1_pos, v2_pos);
 
-    /* Find the triangle index based on the weights. TODO: Use different algorithm. */
-    int i_tri = 0;
-    for (; i_tri < looptris_len; i_tri++) {
-      if (weights[i_tri] > random_weight_total) {
-        break;
-      }
+    const int looptri_seed = BLI_hash_int(looptri_index);
+    RandomNumberGenerator looptri_rng(looptri_seed);
+
+    const float points_amount_fl = area * density;
+    const float add_point_probability = fractf(points_amount_fl);
+    const bool add_point = add_point_probability > looptri_rng.get_float();
+    const int point_amount = (int)points_amount_fl + (int)add_point;
+
+    for (int i = 0; i < point_amount; i++) {
+      const float3 bary_coords = looptri_rng.get_barycentric_coordinates();
+      float3 point_pos;
+      interp_v3_v3v3v3(point_pos, v0_pos, v1_pos, v2_pos, bary_coords);
+      points.append(point_pos);
     }
-    BLI_assert(i_tri < looptris_len);
-
-    /* Place the point randomly in the selected triangle. */
-    float *v0, *v1, *v2;
-    mesh_loop_tri_corner_coords(mesh, i_tri, &v0, &v1, &v2);
-
-    const float3 co = rng.get_triangle_sample_3d(v0, v1, v2);
-    points.append(co);
   }
 
   return points;
