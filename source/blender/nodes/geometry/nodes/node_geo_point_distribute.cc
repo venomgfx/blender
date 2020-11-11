@@ -24,6 +24,7 @@
 #include "DNA_meshdata_types.h"
 #include "DNA_pointcloud_types.h"
 
+#include "BKE_deform.h"
 #include "BKE_mesh.h"
 #include "BKE_mesh_runtime.h"
 #include "BKE_pointcloud.h"
@@ -33,7 +34,8 @@
 static bNodeSocketTemplate geo_node_point_distribute_in[] = {
     {SOCK_GEOMETRY, N_("Geometry")},
     {SOCK_FLOAT, N_("Density"), 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 100000.0f, PROP_NONE},
-    {SOCK_FLOAT, N_("Minimum Radius"), 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1000.0f, PROP_NONE},
+    /* Use an index, because the vertex group names are not available in the mesh... */
+    {SOCK_INT, N_("Density Attribute Index"), -1, 0, 0, 0, -1, 1000},
     {-1, ""},
 };
 
@@ -46,11 +48,21 @@ namespace blender::nodes {
 
 static Vector<float3> scatter_points_from_mesh(const Mesh *mesh,
                                                const float density,
-                                               const float UNUSED(minimum_radius))
+                                               const int density_attribute_index)
 {
   /* This only updates a cache and can be considered to be logically const. */
   const MLoopTri *looptris = BKE_mesh_runtime_looptri_ensure(const_cast<Mesh *>(mesh));
   const int looptris_len = BKE_mesh_runtime_looptri_len(mesh);
+
+  Array<float> vertex_density_factors(mesh->totvert);
+  if (density_attribute_index == -1) {
+    vertex_density_factors.fill(1.0f);
+  }
+  else {
+    MDeformVert *dverts = mesh->dvert;
+    BKE_defvert_extract_vgroup_to_vertweights(
+        dverts, density_attribute_index, mesh->totvert, vertex_density_factors.data(), false);
+  }
 
   Vector<float3> points;
 
@@ -62,12 +74,18 @@ static Vector<float3> scatter_points_from_mesh(const Mesh *mesh,
     const float3 v0_pos = mesh->mvert[v0_index].co;
     const float3 v1_pos = mesh->mvert[v1_index].co;
     const float3 v2_pos = mesh->mvert[v2_index].co;
+    const float v0_density_factor = vertex_density_factors[v0_index];
+    const float v1_density_factor = vertex_density_factors[v1_index];
+    const float v2_density_factor = vertex_density_factors[v2_index];
+    const float looptri_density_factor = (v0_density_factor + v1_density_factor +
+                                          v2_density_factor) /
+                                         3.0f;
     const float area = area_tri_v3(v0_pos, v1_pos, v2_pos);
 
     const int looptri_seed = BLI_hash_int(looptri_index);
     RandomNumberGenerator looptri_rng(looptri_seed);
 
-    const float points_amount_fl = area * density;
+    const float points_amount_fl = area * density * looptri_density_factor;
     const float add_point_probability = fractf(points_amount_fl);
     const bool add_point = add_point_probability > looptri_rng.get_float();
     const int point_amount = (int)points_amount_fl + (int)add_point;
@@ -95,7 +113,7 @@ static void geo_point_distribute_exec(bNode *UNUSED(node),
   }
 
   const float density = inputs.extract<float>("Density");
-  const float minimum_radius = inputs.extract<float>("Minimum Radius");
+  const int density_attribute_index = std::max(-1, inputs.extract<int>("Density Attribute Index"));
 
   if (density <= 0.0f) {
     geometry_set->replace_mesh(nullptr);
@@ -105,7 +123,7 @@ static void geo_point_distribute_exec(bNode *UNUSED(node),
   }
 
   const Mesh *mesh_in = geometry_set->get_mesh_for_read();
-  Vector<float3> points = scatter_points_from_mesh(mesh_in, density, minimum_radius);
+  Vector<float3> points = scatter_points_from_mesh(mesh_in, density, density_attribute_index);
 
   PointCloud *pointcloud = BKE_pointcloud_new_nomain(points.size());
   memcpy(pointcloud->co, points.data(), sizeof(float3) * points.size());
