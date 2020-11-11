@@ -41,6 +41,8 @@ static bNodeSocketTemplate geo_node_point_distribute_out[] = {
     {-1, ""},
 };
 
+namespace blender::nodes {
+
 static void mesh_loop_tri_corner_coords(
     const Mesh *mesh, const int index, float **r_v0, float **r_v1, float **r_v2)
 {
@@ -56,11 +58,9 @@ static void mesh_loop_tri_corner_coords(
   *r_v2 = mverts[mloop_2->v].co;
 }
 
-using blender::float3;
-
-static PointCloud *scatter_pointcloud_from_mesh(const Mesh *mesh,
-                                                const float density,
-                                                const float UNUSED(minimum_radius))
+static Vector<float3> scatter_points_from_mesh(const Mesh *mesh,
+                                               const float density,
+                                               const float UNUSED(minimum_radius))
 {
   /* This only updates a cache and can be considered to be logically const. */
   BKE_mesh_runtime_looptri_ensure(const_cast<Mesh *>(mesh));
@@ -91,14 +91,15 @@ static PointCloud *scatter_pointcloud_from_mesh(const Mesh *mesh,
 
   /* Calculate the total number of points and create the pointcloud. */
   const int points_len = round_fl_to_int(area_total * density);
-  PointCloud *pointcloud = BKE_pointcloud_new_nomain(points_len);
+  Vector<float3> points;
+  points.reserve(points_len);
 
   /* Distribute the points. */
   blender::RandomNumberGenerator rng(0);
   for (int i = 0; i < points_len; i++) {
     const int random_weight_total = rng.get_float() * weight_total;
 
-    /* Find the triangle index based on the weights. TODO: Use binary search. */
+    /* Find the triangle index based on the weights. TODO: Use different algorithm. */
     int i_tri = 0;
     for (; i_tri < looptris_len; i_tri++) {
       if (weights[i_tri] > random_weight_total) {
@@ -111,17 +112,13 @@ static PointCloud *scatter_pointcloud_from_mesh(const Mesh *mesh,
     float *v0, *v1, *v2;
     mesh_loop_tri_corner_coords(mesh, i_tri, &v0, &v1, &v2);
 
-    float3 co = rng.get_triangle_sample_3d(v0, v1, v2);
-    pointcloud->co[i][0] = co.x;
-    pointcloud->co[i][1] = co.y;
-    pointcloud->co[i][2] = co.z;
-    pointcloud->radius[i] = 0.05f; /* TODO: Use radius attribute / vertex vgroup. */
+    const float3 co = rng.get_triangle_sample_3d(v0, v1, v2);
+    points.append(co);
   }
 
-  return pointcloud;
+  return points;
 }
 
-namespace blender::nodes {
 static void geo_point_distribute_exec(bNode *UNUSED(node),
                                       GeoNodeInputs inputs,
                                       GeoNodeOutputs outputs)
@@ -137,16 +134,21 @@ static void geo_point_distribute_exec(bNode *UNUSED(node),
   const float minimum_radius = inputs.extract<float>("Minimum Radius");
 
   if (density <= 0.0f) {
+    geometry_set->replace_mesh(nullptr);
+    geometry_set->replace_pointcloud(nullptr);
     outputs.set("Geometry", std::move(geometry_set));
     return;
   }
 
   const Mesh *mesh_in = geometry_set->get_mesh_for_read();
-  PointCloud *pointcloud_out = scatter_pointcloud_from_mesh(mesh_in, density, minimum_radius);
+  Vector<float3> points = scatter_points_from_mesh(mesh_in, density, minimum_radius);
 
-  /* For now, replace any existing pointcloud in the geometry. */
+  PointCloud *pointcloud = BKE_pointcloud_new_nomain(points.size());
+  memcpy(pointcloud->co, points.data(), sizeof(float3) * points.size());
+
   make_geometry_set_mutable(geometry_set);
-  geometry_set->replace_pointcloud(pointcloud_out);
+  geometry_set->replace_mesh(nullptr);
+  geometry_set->replace_pointcloud(pointcloud);
 
   outputs.set("Geometry", std::move(geometry_set));
 }
