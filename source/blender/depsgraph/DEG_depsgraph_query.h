@@ -150,6 +150,7 @@ typedef struct DEGObjectIterData {
   struct Object *geometry_set_owner;
   struct GeometrySetC *geometry_set_c;
   int next_geometry_set_component;
+  struct Object temp_geometry_component_object;
 
   /* **** Iteration over dupli-list. *** */
 

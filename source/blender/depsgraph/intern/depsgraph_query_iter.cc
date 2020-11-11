@@ -299,7 +299,7 @@ void DEG_iterator_objects_next(BLI_Iterator *iter)
         data->next_geometry_set_component = (int)bke::GeometryComponentType::PointCloud;
         const Mesh *mesh = geometry_set->get_mesh_for_read();
         if (mesh != nullptr) {
-          Object *temp_object = &data->temp_dupli_object;
+          Object *temp_object = &data->temp_geometry_component_object;
           *temp_object = *data->geometry_set_owner;
           temp_object->type = OB_MESH;
           temp_object->data = (void *)mesh;
@@ -311,7 +311,7 @@ void DEG_iterator_objects_next(BLI_Iterator *iter)
         data->geometry_set_c = nullptr;
         const PointCloud *pointcloud = geometry_set->get_pointcloud_for_read();
         if (pointcloud != nullptr) {
-          Object *temp_object = &data->temp_dupli_object;
+          Object *temp_object = &data->temp_geometry_component_object;
           *temp_object = *data->geometry_set_owner;
           temp_object->type = OB_POINTCLOUD;
           temp_object->data = (void *)pointcloud;
