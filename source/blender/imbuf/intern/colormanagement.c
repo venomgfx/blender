@@ -879,9 +879,9 @@ static OCIO_ConstProcessorRcPtr *create_display_buffer_processor(const char *loo
   /* fstop exposure control */
   if (exposure != 0.0f) {
     OCIO_MatrixTransformRcPtr *mt;
-    float gain = powf(2.0f, exposure);
-    const float scale4f[] = {gain, gain, gain, 1.0f};
-    float m44[16], offset4[4];
+    double gain = powf(2.0f, exposure);
+    const double scale4f[] = {gain, gain, gain, 1.0f};
+    double m44[16], offset4[4];
 
     OCIO_matrixTransformScale(m44, offset4, scale4f);
     mt = OCIO_createMatrixTransform();
@@ -894,11 +894,11 @@ static OCIO_ConstProcessorRcPtr *create_display_buffer_processor(const char *loo
   /* post-display gamma transform */
   if (gamma != 1.0f) {
     OCIO_ExponentTransformRcPtr *et;
-    float exponent = 1.0f / MAX2(FLT_EPSILON, gamma);
-    const float exponent4f[] = {exponent, exponent, exponent, exponent};
+    double exponent = 1.0 / MAX2(DBL_EPSILON, (double)gamma);
+    const double exponent4dbl[] = {exponent, exponent, exponent, exponent};
 
     et = OCIO_createExponentTransform();
-    OCIO_exponentTransformSetValue(et, exponent4f);
+    OCIO_exponentTransformSetValue(et, exponent4dbl);
     OCIO_displayTransformSetDisplayCC(dt, (OCIO_ConstTransformRcPtr *)et);
 
     OCIO_exponentTransformRelease(et);
@@ -906,13 +906,13 @@ static OCIO_ConstProcessorRcPtr *create_display_buffer_processor(const char *loo
 
   OCIO_GroupTransformRcPtr *gt = OCIO_createGroupTransform();
   OCIO_groupTransformSetDirection(gt, true);
-  OCIO_groupTransformPushBack(gt, (OCIO_ConstTransformRcPtr *)dt);
+  OCIO_groupTransformPushBack(gt, (OCIO_TransformRcPtr *)dt);
 
   if (linear_output) {
     /* TODO use correct function display. */
     OCIO_ExponentTransformRcPtr *et = OCIO_createExponentTransform();
-    OCIO_exponentTransformSetValue(et, (float[4]){2.2f, 2.2f, 2.2f, 1.0f});
-    OCIO_groupTransformPushBack(gt, (OCIO_ConstTransformRcPtr *)et);
+    OCIO_exponentTransformSetValue(et, (double[4]){2.2, 2.2, 2.2, 1.0});
+    OCIO_groupTransformPushBack(gt, (OCIO_TransformRcPtr *)et);
     OCIO_exponentTransformRelease(et);
   }
 
@@ -933,7 +933,7 @@ static OCIO_ConstProcessorRcPtr *create_display_encoded_buffer_processor(
 
   /* TODO use correct function display. */
   OCIO_ExponentTransformRcPtr *et = OCIO_createExponentTransform();
-  OCIO_exponentTransformSetValue(et, (float[4]){1.0f / 2.2f, 1.0f / 2.2f, 1.0f / 2.2f, 1.0f});
+  OCIO_exponentTransformSetValue(et, (double[4]){1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2, 1.0});
 
   processor = OCIO_configGetProcessor(config, (OCIO_ConstTransformRcPtr *)et);
 

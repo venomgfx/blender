@@ -155,10 +155,10 @@ struct FallbackTransform {
   FallbackTransform *linear_transform;
   FallbackTransform *display_transform;
   /* Exponent transform. */
-  float exponent[4];
+  double exponent[4];
   /* Matrix transform. */
-  float matrix[16];
-  float offset[4];
+  double matrix[16];
+  double offset[4];
 
   MEM_CXX_CLASS_ALLOC_FUNCS("FallbackTransform");
 };
@@ -618,7 +618,7 @@ void FallbackImpl::groupTransformSetDirection(OCIO_GroupTransformRcPtr * /*gt*/,
 }
 
 void FallbackImpl::groupTransformPushBack(OCIO_GroupTransformRcPtr *gt,
-                                          OCIO_ConstTransformRcPtr *transform)
+                                          OCIO_TransformRcPtr *transform)
 {
   FallbackGroupTransform *group = (FallbackGroupTransform *)gt;
   group->list.push_back((FallbackTransform *)transform);
@@ -652,10 +652,10 @@ OCIO_ExponentTransformRcPtr *FallbackImpl::createExponentTransform(void)
 }
 
 void FallbackImpl::exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et,
-                                             const float *exponent)
+                                             const double *exponent)
 {
   FallbackTransform *transform = (FallbackTransform *)et;
-  copy_v4_v4(transform->exponent, exponent);
+  copy_v4_v4_db(transform->exponent, exponent);
 }
 
 void FallbackImpl::exponentTransformRelease(OCIO_ExponentTransformRcPtr * /*et*/)
@@ -670,25 +670,25 @@ OCIO_MatrixTransformRcPtr *FallbackImpl::createMatrixTransform(void)
 }
 
 void FallbackImpl::matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                                           const float *m44,
-                                           const float *offset4)
+                                           const double *m44,
+                                           const double *offset4)
 {
   FallbackTransform *transform = (FallbackTransform *)mt;
-  copy_m4_m4((float(*)[4])transform->matrix, (float(*)[4])m44);
-  copy_v4_v4(transform->offset, offset4);
+  copy_m4_m4_db((double(*)[4])transform->matrix, (double(*)[4])m44);
+  copy_v4_v4_db(transform->offset, offset4);
 }
 
 void FallbackImpl::matrixTransformRelease(OCIO_MatrixTransformRcPtr * /*mt*/)
 {
 }
 
-void FallbackImpl::matrixTransformScale(float *m44, float *offset4, const float *scale4)
+void FallbackImpl::matrixTransformScale(double *m44, double *offset4, const double *scale4)
 {
   if (scale4 == NULL) {
     return;
   }
   if (m44 != NULL) {
-    memset(m44, 0, 16 * sizeof(float));
+    memset(m44, 0, 16 * sizeof(double));
     m44[0] = scale4[0];
     m44[5] = scale4[1];
     m44[10] = scale4[2];

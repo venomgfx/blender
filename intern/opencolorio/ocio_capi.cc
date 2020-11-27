@@ -317,7 +317,7 @@ void OCIO_groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bool fo
   impl->groupTransformSetDirection(gt, forward);
 }
 
-void OCIO_groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_ConstTransformRcPtr *tr)
+void OCIO_groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_TransformRcPtr *tr)
 {
   impl->groupTransformPushBack(gt, tr);
 }
@@ -347,7 +347,7 @@ OCIO_ExponentTransformRcPtr *OCIO_createExponentTransform(void)
   return impl->createExponentTransform();
 }
 
-void OCIO_exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const float *exponent)
+void OCIO_exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const double *exponent)
 {
   impl->exponentTransformSetValue(et, exponent);
 }
@@ -363,8 +363,8 @@ OCIO_MatrixTransformRcPtr *OCIO_createMatrixTransform(void)
 }
 
 void OCIO_matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                                  const float *m44,
-                                  const float *offset4)
+                                  const double *m44,
+                                  const double *offset4)
 {
   impl->matrixTransformSetValue(mt, m44, offset4);
 }
@@ -374,7 +374,7 @@ void OCIO_matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt)
   impl->matrixTransformRelease(mt);
 }
 
-void OCIO_matrixTransformScale(float *m44, float *offset4, const float *scale4f)
+void OCIO_matrixTransformScale(double *m44, double *offset4, const double *scale4f)
 {
   impl->matrixTransformScale(m44, offset4, scale4f);
 }

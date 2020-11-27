@@ -35,6 +35,7 @@ using namespace OCIO_NAMESPACE;
 
 #include "MEM_guardedalloc.h"
 
+#include "BLI_math.h"
 #include "BLI_math_color.h"
 
 #include "ocio_impl.h"
@@ -805,8 +806,14 @@ OCIO_PackedImageDesc *OCIOImpl::createOCIO_PackedImageDesc(float *data,
 {
   try {
     void *mem = MEM_mallocN(sizeof(PackedImageDesc), __func__);
-    PackedImageDesc *id = new (mem) PackedImageDesc(
-        data, width, height, numChannels, chanStrideBytes, xStrideBytes, yStrideBytes);
+    PackedImageDesc *id = new (mem) PackedImageDesc(data,
+                                                    width,
+                                                    height,
+                                                    numChannels,
+                                                    BIT_DEPTH_F32,
+                                                    chanStrideBytes,
+                                                    xStrideBytes,
+                                                    yStrideBytes);
 
     return (OCIO_PackedImageDesc *)id;
   }
@@ -837,9 +844,9 @@ void OCIOImpl::groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bo
   (*(GroupTransformRcPtr *)gt)->setDirection(dir);
 }
 
-void OCIOImpl::groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_ConstTransformRcPtr *tr)
+void OCIOImpl::groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_TransformRcPtr *tr)
 {
-  (*(GroupTransformRcPtr *)gt)->push_back(*(ConstTransformRcPtr *)tr);
+  (*(GroupTransformRcPtr *)gt)->appendTransform(*(TransformRcPtr *)tr);
 }
 
 void OCIOImpl::groupTransformRelease(OCIO_GroupTransformRcPtr *gt)
@@ -876,9 +883,12 @@ OCIO_ExponentTransformRcPtr *OCIOImpl::createExponentTransform(void)
   return (OCIO_ExponentTransformRcPtr *)et;
 }
 
-void OCIOImpl::exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const float *exponent)
+void OCIOImpl::exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const double *exponent)
 {
-  (*(ExponentTransformRcPtr *)et)->setValue(exponent);
+  // TODO: should we eliminate this copy?
+  double e[4];
+  copy_v4_v4_db(e, exponent);
+  (*(ExponentTransformRcPtr *)et)->setValue(e);
 }
 
 void OCIOImpl::exponentTransformRelease(OCIO_ExponentTransformRcPtr *et)
@@ -896,10 +906,11 @@ OCIO_MatrixTransformRcPtr *OCIOImpl::createMatrixTransform(void)
 }
 
 void OCIOImpl::matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                                       const float *m44,
-                                       const float *offset4)
+                                       const double *m44,
+                                       const double *offset4)
 {
-  (*(MatrixTransformRcPtr *)mt)->setValue(m44, offset4);
+  (*(MatrixTransformRcPtr *)mt)->setMatrix(m44);
+  (*(MatrixTransformRcPtr *)mt)->setOffset(offset4);
 }
 
 void OCIOImpl::matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt)
@@ -907,7 +918,7 @@ void OCIOImpl::matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt)
   OBJECT_GUARDED_DELETE((MatrixTransformRcPtr *)mt, MatrixTransformRcPtr);
 }
 
-void OCIOImpl::matrixTransformScale(float *m44, float *offset4, const float *scale4f)
+void OCIOImpl::matrixTransformScale(double *m44, double *offset4, const double *scale4f)
 {
   MatrixTransform::Scale(m44, offset4, scale4f);
 }

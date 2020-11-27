@@ -120,7 +120,7 @@ class IOCIOImpl {
   virtual OCIO_GroupTransformRcPtr *createGroupTransform(void) = 0;
   virtual void groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bool forward) = 0;
   virtual void groupTransformPushBack(OCIO_GroupTransformRcPtr *gt,
-                                      OCIO_ConstTransformRcPtr *transform) = 0;
+                                      OCIO_TransformRcPtr *transform) = 0;
   virtual void groupTransformRelease(OCIO_GroupTransformRcPtr *gt) = 0;
 
   virtual OCIO_ColorSpaceTransformRcPtr *createColorSpaceTransform(void) = 0;
@@ -129,16 +129,16 @@ class IOCIOImpl {
 
   virtual OCIO_ExponentTransformRcPtr *createExponentTransform(void) = 0;
   virtual void exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et,
-                                         const float *exponent) = 0;
+                                         const double *exponent) = 0;
   virtual void exponentTransformRelease(OCIO_ExponentTransformRcPtr *et) = 0;
 
   virtual OCIO_MatrixTransformRcPtr *createMatrixTransform(void) = 0;
   virtual void matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                                       const float *m44,
-                                       const float *offset4) = 0;
+                                       const double *m44,
+                                       const double *offset4) = 0;
   virtual void matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt) = 0;
 
-  virtual void matrixTransformScale(float *m44, float *offset4, const float *scale4) = 0;
+  virtual void matrixTransformScale(double *m44, double *offset4, const double *scale4) = 0;
 
   virtual bool supportGLSLDraw(void) = 0;
   virtual bool setupGLSLDraw(struct OCIO_GLSLDrawState **state_r,
@@ -243,7 +243,7 @@ class FallbackImpl : public IOCIOImpl {
 
   OCIO_GroupTransformRcPtr *createGroupTransform(void);
   void groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bool forward);
-  void groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_ConstTransformRcPtr *transform);
+  void groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_TransformRcPtr *transform);
   void groupTransformRelease(OCIO_GroupTransformRcPtr *gt);
 
   OCIO_ColorSpaceTransformRcPtr *createColorSpaceTransform(void);
@@ -251,16 +251,16 @@ class FallbackImpl : public IOCIOImpl {
   void colorSpaceTransformRelease(OCIO_ColorSpaceTransformRcPtr *ct);
 
   OCIO_ExponentTransformRcPtr *createExponentTransform(void);
-  void exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const float *exponent);
+  void exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const double *exponent);
   void exponentTransformRelease(OCIO_ExponentTransformRcPtr *et);
 
   OCIO_MatrixTransformRcPtr *createMatrixTransform(void);
   void matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                               const float *m44,
-                               const float *offset4);
+                               const double *m44,
+                               const double *offset4);
   void matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt);
 
-  void matrixTransformScale(float *m44, float *offset4, const float *scale4);
+  void matrixTransformScale(double *m44, double *offset4, const double *scale4);
 
   bool supportGLSLDraw(void);
   bool setupGLSLDraw(struct OCIO_GLSLDrawState **state_r,
@@ -364,7 +364,7 @@ class OCIOImpl : public IOCIOImpl {
 
   OCIO_GroupTransformRcPtr *createGroupTransform(void);
   void groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bool forward);
-  void groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_ConstTransformRcPtr *transform);
+  void groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_TransformRcPtr *transform);
   void groupTransformRelease(OCIO_GroupTransformRcPtr *gt);
 
   OCIO_ColorSpaceTransformRcPtr *createColorSpaceTransform(void);
@@ -372,16 +372,16 @@ class OCIOImpl : public IOCIOImpl {
   void colorSpaceTransformRelease(OCIO_ColorSpaceTransformRcPtr *ct);
 
   OCIO_ExponentTransformRcPtr *createExponentTransform(void);
-  void exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const float *exponent);
+  void exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const double *exponent);
   void exponentTransformRelease(OCIO_ExponentTransformRcPtr *et);
 
   OCIO_MatrixTransformRcPtr *createMatrixTransform(void);
   void matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                               const float *m44,
-                               const float *offset4);
+                               const double *m44,
+                               const double *offset4);
   void matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt);
 
-  void matrixTransformScale(float *m44, float *offset4, const float *scale4);
+  void matrixTransformScale(double *m44, double *offset4, const double *scale4);
 
   bool supportGLSLDraw(void);
   bool setupGLSLDraw(struct OCIO_GLSLDrawState **state_r,

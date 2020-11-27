@@ -46,6 +46,7 @@ OCIO_DECLARE_HANDLE(OCIO_ConstContextRcPtr);
 OCIO_DECLARE_HANDLE(OCIO_PackedImageDesc);
 OCIO_DECLARE_HANDLE(OCIO_DisplayTransformRcPtr);
 OCIO_DECLARE_HANDLE(OCIO_ConstTransformRcPtr);
+OCIO_DECLARE_HANDLE(OCIO_TransformRcPtr);
 OCIO_DECLARE_HANDLE(OCIO_ColorSpaceTransformRcPtr);
 OCIO_DECLARE_HANDLE(OCIO_ExponentTransformRcPtr);
 OCIO_DECLARE_HANDLE(OCIO_MatrixTransformRcPtr);
@@ -202,7 +203,7 @@ void OCIO_PackedImageDescRelease(OCIO_PackedImageDesc *p);
 
 OCIO_GroupTransformRcPtr *OCIO_createGroupTransform(void);
 void OCIO_groupTransformSetDirection(OCIO_GroupTransformRcPtr *gt, const bool forward);
-void OCIO_groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_ConstTransformRcPtr *tr);
+void OCIO_groupTransformPushBack(OCIO_GroupTransformRcPtr *gt, OCIO_TransformRcPtr *tr);
 void OCIO_groupTransformRelease(OCIO_GroupTransformRcPtr *gt);
 
 OCIO_ColorSpaceTransformRcPtr *OCIO_createColorSpaceTransform(void);
@@ -210,16 +211,16 @@ void OCIO_colorSpaceTransformSetSrc(OCIO_ColorSpaceTransformRcPtr *ct, const cha
 void OCIO_colorSpaceTransformRelease(OCIO_ColorSpaceTransformRcPtr *ct);
 
 OCIO_ExponentTransformRcPtr *OCIO_createExponentTransform(void);
-void OCIO_exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const float *exponent);
+void OCIO_exponentTransformSetValue(OCIO_ExponentTransformRcPtr *et, const double *exponent);
 void OCIO_exponentTransformRelease(OCIO_ExponentTransformRcPtr *et);
 
 OCIO_MatrixTransformRcPtr *OCIO_createMatrixTransform(void);
 void OCIO_matrixTransformSetValue(OCIO_MatrixTransformRcPtr *mt,
-                                  const float *m44,
-                                  const float *offset4);
+                                  const double *m44,
+                                  const double *offset4);
 void OCIO_matrixTransformRelease(OCIO_MatrixTransformRcPtr *mt);
 
-void OCIO_matrixTransformScale(float *m44, float *offset4, const float *scale4);
+void OCIO_matrixTransformScale(double *m44, double *offset4, const double *scale4);
 
 int OCIO_supportGLSLDraw(void);
 int OCIO_setupGLSLDraw(struct OCIO_GLSLDrawState **state_r,
