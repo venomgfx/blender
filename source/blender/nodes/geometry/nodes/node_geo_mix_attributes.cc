@@ -168,7 +168,7 @@ void register_node_type_geo_mix_attributes()
 {
   static bNodeType ntype;
 
-  geo_node_type_base(&ntype, GEO_NODE_MIX_ATTRIBUTES, "Mix Attributes", 0, 0);
+  geo_node_type_base(&ntype, GEO_NODE_MIX_ATTRIBUTES, "Mix Attributes", NODE_CLASS_ATTRIBUTE, 0);
   node_type_socket_templates(&ntype, geo_node_mix_attributes_in, geo_node_mix_attribute_out);
   ntype.geometry_node_execute = blender::nodes::geo_node_mix_attributes_exec;
   nodeRegisterType(&ntype);
