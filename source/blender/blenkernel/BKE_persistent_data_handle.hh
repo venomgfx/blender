@@ -143,7 +143,7 @@ class PersistentDataHandleMap {
     if (id == nullptr) {
       return nullptr;
     }
-    if (GS(id->name) != ID_CO) {
+    if (GS(id->name) != ID_GR) {
       return nullptr;
     }
     return (Collection *)id;
