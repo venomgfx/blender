@@ -1470,6 +1470,11 @@ typedef enum GeometryNodeUseAttributeFlag {
   GEO_NODE_USE_ATTRIBUTE_B = (1 << 1),
 } GeometryNodeUseAttributeFlag;
 
+typedef enum GeometryNodePointInstanceType {
+  GEO_NODE_POINT_INSTANCE_TYPE_OBJECT = 0,
+  GEO_NODE_POINT_INSTANCE_TYPE_COLLECTION = 1,
+} GeometryNodePointInstanceType;
+
 #ifdef __cplusplus
 }
 #endif

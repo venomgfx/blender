@@ -36,6 +36,17 @@ static bNodeSocketTemplate geo_node_point_instance_out[] = {
 
 namespace blender::nodes {
 
+static void geo_node_point_instance_update(bNodeTree *UNUSED(tree), bNode *node)
+{
+  bNodeSocket *object_socket = (bNodeSocket *)BLI_findlink(&node->inputs, 1);
+  bNodeSocket *collection_socket = object_socket->next;
+
+  GeometryNodePointInstanceType type = (GeometryNodePointInstanceType)node->custom1;
+
+  nodeSetSocketAvailability(object_socket, type == GEO_NODE_POINT_INSTANCE_TYPE_OBJECT);
+  nodeSetSocketAvailability(collection_socket, type == GEO_NODE_POINT_INSTANCE_TYPE_COLLECTION);
+}
+
 static void add_instances_from_geometry_component(InstancesComponent &instances,
                                                   const GeometryComponent &src_geometry,
                                                   Object *object,
@@ -60,20 +71,26 @@ static void add_instances_from_geometry_component(InstancesComponent &instances,
 
 static void geo_node_point_instance_exec(GeoNodeExecParams params)
 {
+  GeometryNodePointInstanceType type = (GeometryNodePointInstanceType)params.node().custom1;
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Geometry");
   GeometrySet geometry_set_out;
 
-  bke::PersistentObjectHandle object_handle = params.extract_input<bke::PersistentObjectHandle>(
-      "Object");
-  Object *object = params.handle_map().lookup(object_handle);
+  Object *object = nullptr;
+  Collection *collection = nullptr;
 
-  bke::PersistentCollectionHandle collection_handle =
-      params.extract_input<bke::PersistentCollectionHandle>("Collection");
-  Collection *collection = params.handle_map().lookup(collection_handle);
-
-  if (object == params.self_object()) {
+  if (type == GEO_NODE_POINT_INSTANCE_TYPE_OBJECT) {
+    bke::PersistentObjectHandle object_handle = params.extract_input<bke::PersistentObjectHandle>(
+        "Object");
+    object = params.handle_map().lookup(object_handle);
     /* Avoid accidental recursion of instances. */
-    object = nullptr;
+    if (object == params.self_object()) {
+      object = nullptr;
+    }
+  }
+  else if (type == GEO_NODE_POINT_INSTANCE_TYPE_COLLECTION) {
+    bke::PersistentCollectionHandle collection_handle =
+        params.extract_input<bke::PersistentCollectionHandle>("Collection");
+    collection = params.handle_map().lookup(collection_handle);
   }
 
   InstancesComponent &instances = geometry_set_out.get_component_for_write<InstancesComponent>();
@@ -99,6 +116,7 @@ void register_node_type_geo_point_instance()
 
   geo_node_type_base(&ntype, GEO_NODE_POINT_INSTANCE, "Point Instance", NODE_CLASS_GEOMETRY, 0);
   node_type_socket_templates(&ntype, geo_node_point_instance_in, geo_node_point_instance_out);
+  node_type_update(&ntype, blender::nodes::geo_node_point_instance_update);
   ntype.geometry_node_execute = blender::nodes::geo_node_point_instance_exec;
   nodeRegisterType(&ntype);
 }
