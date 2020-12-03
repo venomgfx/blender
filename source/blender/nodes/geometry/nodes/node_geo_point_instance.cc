@@ -25,6 +25,7 @@
 static bNodeSocketTemplate geo_node_point_instance_in[] = {
     {SOCK_GEOMETRY, N_("Geometry")},
     {SOCK_OBJECT, N_("Object")},
+    {SOCK_COLLECTION, N_("Collection")},
     {-1, ""},
 };
 
@@ -37,7 +38,8 @@ namespace blender::nodes {
 
 static void add_instances_from_geometry_component(InstancesComponent &instances,
                                                   const GeometryComponent &src_geometry,
-                                                  Object *object)
+                                                  Object *object,
+                                                  Collection *collection)
 {
   Float3ReadAttribute positions = src_geometry.attribute_get_for_read<float3>(
       "position", ATTR_DOMAIN_POINT, {0, 0, 0});
@@ -47,7 +49,12 @@ static void add_instances_from_geometry_component(InstancesComponent &instances,
       "scale", ATTR_DOMAIN_POINT, {1, 1, 1});
 
   for (const int i : IndexRange(positions.size())) {
-    instances.add_instance(object, positions[i], rotations[i], scales[i]);
+    if (object != nullptr) {
+      instances.add_instance(object, positions[i], rotations[i], scales[i]);
+    }
+    if (collection != nullptr) {
+      instances.add_instance(collection, positions[i], rotations[i], scales[i]);
+    }
   }
 }
 
@@ -60,16 +67,26 @@ static void geo_node_point_instance_exec(GeoNodeExecParams params)
       "Object");
   Object *object = params.handle_map().lookup(object_handle);
 
-  if (object != nullptr && object != params.self_object()) {
-    InstancesComponent &instances = geometry_set_out.get_component_for_write<InstancesComponent>();
-    if (geometry_set.has<MeshComponent>()) {
-      add_instances_from_geometry_component(
-          instances, *geometry_set.get_component_for_read<MeshComponent>(), object);
-    }
-    if (geometry_set.has<PointCloudComponent>()) {
-      add_instances_from_geometry_component(
-          instances, *geometry_set.get_component_for_read<PointCloudComponent>(), object);
-    }
+  bke::PersistentCollectionHandle collection_handle =
+      params.extract_input<bke::PersistentCollectionHandle>("Collection");
+  Collection *collection = params.handle_map().lookup(collection_handle);
+
+  if (object == params.self_object()) {
+    /* Avoid accidental recursion of instances. */
+    object = nullptr;
+  }
+
+  InstancesComponent &instances = geometry_set_out.get_component_for_write<InstancesComponent>();
+  if (geometry_set.has<MeshComponent>()) {
+    add_instances_from_geometry_component(
+        instances, *geometry_set.get_component_for_read<MeshComponent>(), object, collection);
+  }
+  if (geometry_set.has<PointCloudComponent>()) {
+    add_instances_from_geometry_component(
+        instances,
+        *geometry_set.get_component_for_read<PointCloudComponent>(),
+        object,
+        collection);
   }
 
   params.set_output("Geometry", std::move(geometry_set_out));
