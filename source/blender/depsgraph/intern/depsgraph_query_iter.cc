@@ -173,6 +173,11 @@ bool deg_iterator_components_step(BLI_Iterator *iter)
     data->geometry_component_id++;
 
     /* The pointcloud component. */
+    if (data->geometry_component_owner->type == OB_POINTCLOUD) {
+      iter->current = data->geometry_component_owner;
+      return true;
+    }
+
     const PointCloud *pointcloud = geometry_set->get_pointcloud_for_read();
     if (pointcloud != nullptr) {
       Object *temp_object = &data->temp_geometry_component_object;

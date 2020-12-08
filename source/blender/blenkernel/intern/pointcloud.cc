@@ -383,9 +383,19 @@ void BKE_pointcloud_data_update(struct Depsgraph *depsgraph, struct Scene *scene
   pointcloud_evaluate_modifiers(depsgraph, scene, object, geometry_set);
 
   /* Assign evaluated object. */
-  PointCloud *dummy_pointcloud = BKE_pointcloud_new_nomain(0);
-  BKE_object_eval_assign_data(object, &dummy_pointcloud->id, true);
-  object->runtime.geometry_set_eval = new GeometrySet(geometry_set);
+  PointCloudComponent &pointcloud_component =
+      geometry_set.get_component_for_write<PointCloudComponent>();
+  PointCloud *pointcloud_eval = pointcloud_component.release();
+  if (pointcloud_eval == nullptr) {
+    pointcloud_eval = BKE_pointcloud_new_nomain(0);
+  }
+  else {
+    pointcloud_component.replace(pointcloud_eval, GeometryOwnershipType::ReadOnly);
+  }
+
+  const bool eval_is_owned = pointcloud_eval != pointcloud;
+  BKE_object_eval_assign_data(object, &pointcloud_eval->id, eval_is_owned);
+  object->runtime.geometry_set_eval = new GeometrySet(std::move(geometry_set));
 }
 
 /* Draw Cache */
