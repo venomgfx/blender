@@ -1043,6 +1043,14 @@ static void freeData(ModifierData *md)
   }
 }
 
+static void requiredDataMask(Object *UNUSED(ob),
+                             ModifierData *UNUSED(md),
+                             CustomData_MeshMasks *r_cddata_masks)
+{
+  /* We don't know what the node tree will need. */
+  r_cddata_masks->vmask |= CD_MASK_MDEFORMVERT;
+}
+
 ModifierTypeInfo modifierType_Nodes = {
     /* name */ "GeometryNodes",
     /* structName */ "NodesModifierData",
@@ -1067,7 +1075,7 @@ ModifierTypeInfo modifierType_Nodes = {
     /* modifyVolume */ nullptr,
 
     /* initData */ initData,
-    /* requiredDataMask */ nullptr,
+    /* requiredDataMask */ requiredDataMask,
     /* freeData */ freeData,
     /* isDisabled */ isDisabled,
     /* updateDepsgraph */ updateDepsgraph,
