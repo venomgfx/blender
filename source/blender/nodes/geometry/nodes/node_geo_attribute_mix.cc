@@ -22,14 +22,14 @@ static bNodeSocketTemplate geo_node_attribute_mix_in[] = {
     {SOCK_GEOMETRY, N_("Geometry")},
     {SOCK_STRING, N_("Factor")},
     {SOCK_FLOAT, N_("Factor"), 0.5, 0.0, 0.0, 0.0, 0.0, 1.0, PROP_FACTOR},
-    {SOCK_STRING, N_("Attribute A")},
-    {SOCK_FLOAT, N_("Attribute A"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
-    {SOCK_VECTOR, N_("Attribute A"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
-    {SOCK_RGBA, N_("Attribute A"), 0.5, 0.5, 0.5, 1.0},
-    {SOCK_STRING, N_("Attribute B")},
-    {SOCK_FLOAT, N_("Attribute B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
-    {SOCK_VECTOR, N_("Attribute B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
-    {SOCK_RGBA, N_("Attribute B"), 0.5, 0.5, 0.5, 1.0},
+    {SOCK_STRING, N_("A")},
+    {SOCK_FLOAT, N_("A"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_VECTOR, N_("A"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_RGBA, N_("A"), 0.5, 0.5, 0.5, 1.0},
+    {SOCK_STRING, N_("B")},
+    {SOCK_FLOAT, N_("B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_VECTOR, N_("B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_RGBA, N_("B"), 0.5, 0.5, 0.5, 1.0},
     {SOCK_STRING, N_("Result")},
     {-1, ""},
 };
@@ -94,7 +94,7 @@ static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
                                             const GeoNodeExecParams &params,
                                             const AttributeDomain result_domain,
                                             const CustomDataType result_type,
-                                            const char *prefix)
+                                            const StringRef name)
 {
   const bNode &node = params.node();
   const bNodeSocket *found_socket = nullptr;
@@ -102,7 +102,7 @@ static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
     if ((socket->flag & SOCK_UNAVAIL) != 0) {
       continue;
     }
-    if (BLI_str_startswith(socket->name, prefix)) {
+    if (name == socket->name) {
       found_socket = socket;
       break;
     }
@@ -163,10 +163,10 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
   }();
 
   ReadAttributePtr attribute_a = get_input_attribute(
-      component, params, result_domain, result_type, "Attribute A");
+      component, params, result_domain, result_type, "A");
 
   ReadAttributePtr attribute_b = get_input_attribute(
-      component, params, result_domain, result_type, "Attribute B");
+      component, params, result_domain, result_type, "B");
 
   if (result_type == CD_PROP_FLOAT) {
     FloatReadAttribute attribute_a_float = std::move(attribute_a);
@@ -226,12 +226,12 @@ static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
 }
 
 static void update_attribute_input_socket_availabilities(bNode &node,
-                                                         const char *prefix,
+                                                         const StringRef name,
                                                          const uint8_t mode)
 {
   const GeometryNodeAttributeInputMode mode_ = (GeometryNodeAttributeInputMode)mode;
   LISTBASE_FOREACH (bNodeSocket *, socket, &node.inputs) {
-    if (BLI_str_startswith(socket->name, prefix)) {
+    if (name == socket->name) {
       const bool is_available =
           ((socket->type == SOCK_STRING && mode_ == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) ||
            (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT__FLOAT) ||
@@ -246,8 +246,8 @@ static void geo_node_attribute_mix_update(bNodeTree *UNUSED(ntree), bNode *node)
 {
   NodeAttributeMix *node_storage = (NodeAttributeMix *)node->storage;
   update_attribute_input_socket_availabilities(*node, "Factor", node_storage->input_type_factor);
-  update_attribute_input_socket_availabilities(*node, "Attribute A", node_storage->input_type_a);
-  update_attribute_input_socket_availabilities(*node, "Attribute B", node_storage->input_type_b);
+  update_attribute_input_socket_availabilities(*node, "A", node_storage->input_type_a);
+  update_attribute_input_socket_availabilities(*node, "B", node_storage->input_type_b);
 }
 
 }  // namespace blender::nodes

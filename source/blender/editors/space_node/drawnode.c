@@ -3188,9 +3188,9 @@ static void node_geometry_buts_attribute_mix(uiLayout *layout,
 {
   uiItemR(layout, ptr, "blend_type", DEFAULT_FLAGS, "", ICON_NONE);
   uiLayout *col = uiLayoutColumn(layout, false);
-  uiItemR(col, ptr, "input_type_factor", DEFAULT_FLAGS, IFACE_("Type Factor"), ICON_NONE);
-  uiItemR(col, ptr, "input_type_a", DEFAULT_FLAGS, IFACE_("Type A"), ICON_NONE);
-  uiItemR(col, ptr, "input_type_b", DEFAULT_FLAGS, IFACE_("Type B"), ICON_NONE);
+  uiItemR(col, ptr, "input_type_factor", DEFAULT_FLAGS, IFACE_("Factor"), ICON_NONE);
+  uiItemR(col, ptr, "input_type_a", DEFAULT_FLAGS, IFACE_("A"), ICON_NONE);
+  uiItemR(col, ptr, "input_type_b", DEFAULT_FLAGS, IFACE_("B"), ICON_NONE);
 }
 
 static void node_geometry_set_butfunc(bNodeType *ntype)
