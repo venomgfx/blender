@@ -672,7 +672,7 @@ blender::bke::ReadAttributePtr GeometryComponent::attribute_get_constant_for_rea
     const AttributeDomain domain,
     const CustomDataType in_data_type,
     const CustomDataType out_data_type,
-    const void *value)
+    const void *value) const
 {
   BLI_assert(this->attribute_domain_supported(domain));
   if (value == nullptr || in_data_type == out_data_type) {

@@ -161,7 +161,7 @@ class GeometryComponent {
       const AttributeDomain domain,
       const CustomDataType in_data_type,
       const CustomDataType out_data_type,
-      const void *value);
+      const void *value) const;
 
   /* Get a read-only dummy attribute that always returns the same value. */
   template<typename T>

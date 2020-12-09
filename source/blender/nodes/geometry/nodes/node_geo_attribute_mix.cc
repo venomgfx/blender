@@ -90,18 +90,57 @@ static void do_mix_operation_color4f(const int blend_mode,
   }
 }
 
+static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
+                                            const GeoNodeExecParams &params,
+                                            const AttributeDomain result_domain,
+                                            const CustomDataType result_type,
+                                            const char *prefix)
+{
+  const bNode &node = params.node();
+  const bNodeSocket *found_socket = nullptr;
+  LISTBASE_FOREACH (const bNodeSocket *, socket, &node.inputs) {
+    if ((socket->flag & SOCK_UNAVAIL) != 0) {
+      continue;
+    }
+    if (BLI_str_startswith(socket->name, prefix)) {
+      found_socket = socket;
+      break;
+    }
+  }
+
+  if (found_socket->type == SOCK_STRING) {
+    const std::string name = params.get_input<std::string>(found_socket->identifier);
+    return component.attribute_get_for_read(name, result_domain, result_type, nullptr);
+  }
+  if (found_socket->type == SOCK_FLOAT) {
+    const float value = params.get_input<float>(found_socket->identifier);
+    return component.attribute_get_constant_for_read_converted(
+        result_domain, CD_PROP_FLOAT, result_type, &value);
+  }
+  if (found_socket->type == SOCK_VECTOR) {
+    const float3 value = params.get_input<float3>(found_socket->identifier);
+    return component.attribute_get_constant_for_read_converted(
+        result_domain, CD_PROP_FLOAT3, result_type, &value);
+  }
+  if (found_socket->type == SOCK_RGBA) {
+    const Color4f value = params.get_input<Color4f>(found_socket->identifier);
+    return component.attribute_get_constant_for_read_converted(
+        result_domain, CD_PROP_COLOR, result_type, &value);
+  }
+  BLI_assert(false);
+  return component.attribute_get_constant_for_read(result_domain, result_type, nullptr);
+}
+
 static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecParams &params)
 {
   const bNode &node = params.node();
   const NodeAttributeMix *node_storage = (const NodeAttributeMix *)node.storage;
 
-  const std::string attribute_b_name = params.get_input<std::string>("Attribute B");
-  const std::string result_name = params.get_input<std::string>("Result");
-
   CustomDataType result_type = CD_PROP_COLOR;
   AttributeDomain result_domain = ATTR_DOMAIN_POINT;
 
   /* Use type and domain from the result attribute, if it exists already. */
+  const std::string result_name = params.get_input<std::string>("Result");
   const ReadAttributePtr result_attribute_read = component.attribute_try_get_for_read(result_name);
   if (result_attribute_read) {
     result_type = result_attribute_read->custom_data_type();
@@ -123,34 +162,11 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
     return component.attribute_get_constant_for_read(result_domain, factor);
   }();
 
-  ReadAttributePtr attribute_a = [&]() {
-    if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) {
-      const std::string name = params.get_input<std::string>("Attribute A");
-      return component.attribute_get_for_read(name, result_domain, result_type, nullptr);
-    }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__FLOAT) {
-      const float value = params.get_input<float>("Attribute A_001");
-      return component.attribute_get_constant_for_read_converted(
-          result_domain, CD_PROP_FLOAT, result_type, &value);
-    }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__VECTOR) {
-      const float3 value = params.get_input<float3>("Attribute A_002");
-      return component.attribute_get_constant_for_read_converted(
-          result_domain, CD_PROP_FLOAT3, result_type, &value);
-    }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__COLOR) {
-      const Color4f value = params.get_input<Color4f>("Attribute A_003");
-      return component.attribute_get_constant_for_read_converted(
-          result_domain, CD_PROP_COLOR, result_type, &value);
-    }
-    BLI_assert(false);
-    return component.attribute_get_constant_for_read(result_domain, result_type, nullptr);
-  }();
+  ReadAttributePtr attribute_a = get_input_attribute(
+      component, params, result_domain, result_type, "Attribute A");
 
-  // ReadAttributePtr attribute_a = component.attribute_get_for_read(
-  //     attribute_a_name, result_domain, result_type, nullptr);
-  ReadAttributePtr attribute_b = component.attribute_get_for_read(
-      attribute_b_name, result_domain, result_type, nullptr);
+  ReadAttributePtr attribute_b = get_input_attribute(
+      component, params, result_domain, result_type, "Attribute B");
 
   if (result_type == CD_PROP_FLOAT) {
     FloatReadAttribute attribute_a_float = std::move(attribute_a);
