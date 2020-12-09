@@ -128,17 +128,17 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
       const std::string name = params.get_input<std::string>("Attribute A");
       return component.attribute_get_for_read(name, result_domain, result_type, nullptr);
     }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT) {
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__FLOAT) {
       const float value = params.get_input<float>("Attribute A_001");
       return component.attribute_get_constant_for_read_converted(
           result_domain, CD_PROP_FLOAT, result_type, &value);
     }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_VECTOR) {
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__VECTOR) {
       const float3 value = params.get_input<float3>("Attribute A_002");
       return component.attribute_get_constant_for_read_converted(
           result_domain, CD_PROP_FLOAT3, result_type, &value);
     }
-    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_COLOR) {
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__COLOR) {
       const Color4f value = params.get_input<Color4f>("Attribute A_003");
       return component.attribute_get_constant_for_read_converted(
           result_domain, CD_PROP_COLOR, result_type, &value);
@@ -203,7 +203,7 @@ static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
   NodeAttributeMix *data = (NodeAttributeMix *)MEM_callocN(sizeof(NodeAttributeMix),
                                                            "attribute mix node");
   data->blend_type = MA_RAMP_BLEND;
-  data->input_type_factor = GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT;
+  data->input_type_factor = GEO_NODE_ATTRIBUTE_INPUT__FLOAT;
   data->input_type_a = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
   data->input_type_b = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
   node->storage = data;
@@ -218,9 +218,9 @@ static void update_attribute_input_socket_availabilities(bNode &node,
     if (BLI_str_startswith(socket->name, prefix)) {
       const bool is_available =
           ((socket->type == SOCK_STRING && mode_ == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) ||
-           (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT) ||
-           (socket->type == SOCK_VECTOR && mode_ == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_VECTOR) ||
-           (socket->type == SOCK_RGBA && mode_ == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_COLOR));
+           (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT__FLOAT) ||
+           (socket->type == SOCK_VECTOR && mode_ == GEO_NODE_ATTRIBUTE_INPUT__VECTOR) ||
+           (socket->type == SOCK_RGBA && mode_ == GEO_NODE_ATTRIBUTE_INPUT__COLOR));
       nodeSetSocketAvailability(socket, is_available);
     }
   }

@@ -437,15 +437,15 @@ static const EnumPropertyItem rna_node_geometry_attribute_input_b_items[] = {
 
 static const EnumPropertyItem rna_node_geometry_attribute_factor_input_type_items[] = {
     {GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE, "ATTRIBUTE", 0, "Attribute", ""},
-    {GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT, "FLOAT", 0, "Float", ""},
+    {GEO_NODE_ATTRIBUTE_INPUT__FLOAT, "FLOAT", 0, "Float", ""},
     {0, NULL, 0, NULL, NULL},
 };
 
 static const EnumPropertyItem rna_node_geometry_attribute_input_type_items[] = {
     {GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE, "ATTRIBUTE", 0, "Attribute", ""},
-    {GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT, "FLOAT", 0, "Float", ""},
-    {GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_VECTOR, "VECTOR", 0, "Vector", ""},
-    {GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_COLOR, "COLOR", 0, "Color", ""},
+    {GEO_NODE_ATTRIBUTE_INPUT__FLOAT, "FLOAT", 0, "Float", ""},
+    {GEO_NODE_ATTRIBUTE_INPUT__VECTOR, "VECTOR", 0, "Vector", ""},
+    {GEO_NODE_ATTRIBUTE_INPUT__COLOR, "COLOR", 0, "Color", ""},
     {0, NULL, 0, NULL, NULL},
 };
 
