@@ -90,48 +90,6 @@ static void do_mix_operation_color4f(const int blend_mode,
   }
 }
 
-static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
-                                            const GeoNodeExecParams &params,
-                                            const AttributeDomain result_domain,
-                                            const CustomDataType result_type,
-                                            const StringRef name,
-                                            const void *default_value)
-{
-  const bNode &node = params.node();
-  const bNodeSocket *found_socket = nullptr;
-  LISTBASE_FOREACH (const bNodeSocket *, socket, &node.inputs) {
-    if ((socket->flag & SOCK_UNAVAIL) != 0) {
-      continue;
-    }
-    if (name == socket->name) {
-      found_socket = socket;
-      break;
-    }
-  }
-
-  if (found_socket->type == SOCK_STRING) {
-    const std::string name = params.get_input<std::string>(found_socket->identifier);
-    return component.attribute_get_for_read(name, result_domain, result_type, default_value);
-  }
-  if (found_socket->type == SOCK_FLOAT) {
-    const float value = params.get_input<float>(found_socket->identifier);
-    return component.attribute_get_constant_for_read_converted(
-        result_domain, CD_PROP_FLOAT, result_type, &value);
-  }
-  if (found_socket->type == SOCK_VECTOR) {
-    const float3 value = params.get_input<float3>(found_socket->identifier);
-    return component.attribute_get_constant_for_read_converted(
-        result_domain, CD_PROP_FLOAT3, result_type, &value);
-  }
-  if (found_socket->type == SOCK_RGBA) {
-    const Color4f value = params.get_input<Color4f>(found_socket->identifier);
-    return component.attribute_get_constant_for_read_converted(
-        result_domain, CD_PROP_COLOR, result_type, &value);
-  }
-  BLI_assert(false);
-  return component.attribute_get_constant_for_read(result_domain, result_type, default_value);
-}
-
 static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecParams &params)
 {
   const bNode &node = params.node();
@@ -154,13 +112,12 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
     return;
   }
 
-  const float default_factor = 0.5f;
-  FloatReadAttribute attribute_factor = get_input_attribute(
-      component, params, result_domain, CD_PROP_FLOAT, "Factor", &default_factor);
-  ReadAttributePtr attribute_a = get_input_attribute(
-      component, params, result_domain, result_type, "A", nullptr);
-  ReadAttributePtr attribute_b = get_input_attribute(
-      component, params, result_domain, result_type, "B", nullptr);
+  FloatReadAttribute attribute_factor = params.get_input_attribute<float>(
+      "Factor", component, result_domain, 0.5f);
+  ReadAttributePtr attribute_a = params.get_input_attribute(
+      "A", component, result_domain, result_type, nullptr);
+  ReadAttributePtr attribute_b = params.get_input_attribute(
+      "B", component, result_domain, result_type, nullptr);
 
   if (result_type == CD_PROP_FLOAT) {
     FloatReadAttribute attribute_a_float = std::move(attribute_a);
