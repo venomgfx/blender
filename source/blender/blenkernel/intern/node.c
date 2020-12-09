@@ -4693,7 +4693,7 @@ static void registerGeometryNodes(void)
   register_node_type_geo_random_attribute();
   register_node_type_geo_attribute_math();
   register_node_type_geo_join_geometry();
-  register_node_type_geo_mix_attributes();
+  register_node_type_geo_attribute_mix();
 }
 
 static void registerFunctionNodes(void)

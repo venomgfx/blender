@@ -18,7 +18,7 @@
 
 #include "node_geometry_util.hh"
 
-static bNodeSocketTemplate geo_node_mix_attributes_in[] = {
+static bNodeSocketTemplate geo_node_attribute_mix_in[] = {
     {SOCK_GEOMETRY, N_("Geometry")},
     {SOCK_STRING, N_("Factor")},
     {SOCK_STRING, N_("Attribute A")},
@@ -83,7 +83,7 @@ static void do_mix_operation_color4f(const int blend_mode,
   }
 }
 
-static void mix_attributes_calc(GeometryComponent &component, const GeoNodeExecParams &params)
+static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecParams &params)
 {
   const bNode &node = params.node();
   const int blend_mode = node.custom1;
@@ -148,15 +148,15 @@ static void mix_attributes_calc(GeometryComponent &component, const GeoNodeExecP
   }
 }
 
-static void geo_node_mix_attributes_exec(GeoNodeExecParams params)
+static void geo_node_attribute_mix_exec(GeoNodeExecParams params)
 {
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Geometry");
 
   if (geometry_set.has<MeshComponent>()) {
-    mix_attributes_calc(geometry_set.get_component_for_write<MeshComponent>(), params);
+    attribute_mix_calc(geometry_set.get_component_for_write<MeshComponent>(), params);
   }
   if (geometry_set.has<PointCloudComponent>()) {
-    mix_attributes_calc(geometry_set.get_component_for_write<PointCloudComponent>(), params);
+    attribute_mix_calc(geometry_set.get_component_for_write<PointCloudComponent>(), params);
   }
 
   params.set_output("Geometry", geometry_set);
@@ -164,12 +164,12 @@ static void geo_node_mix_attributes_exec(GeoNodeExecParams params)
 
 }  // namespace blender::nodes
 
-void register_node_type_geo_mix_attributes()
+void register_node_type_geo_attribute_mix()
 {
   static bNodeType ntype;
 
-  geo_node_type_base(&ntype, GEO_NODE_MIX_ATTRIBUTES, "Mix Attributes", NODE_CLASS_ATTRIBUTE, 0);
-  node_type_socket_templates(&ntype, geo_node_mix_attributes_in, geo_node_mix_attribute_out);
-  ntype.geometry_node_execute = blender::nodes::geo_node_mix_attributes_exec;
+  geo_node_type_base(&ntype, GEO_NODE_ATTRIBUTE_MIX, "Attribute Mix", NODE_CLASS_ATTRIBUTE, 0);
+  node_type_socket_templates(&ntype, geo_node_attribute_mix_in, geo_node_mix_attribute_out);
+  ntype.geometry_node_execute = blender::nodes::geo_node_attribute_mix_exec;
   nodeRegisterType(&ntype);
 }

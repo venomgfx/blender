@@ -277,7 +277,7 @@ DefNode(GeometryNode, GEO_NODE_OBJECT_INFO, 0, "OBJECT_INFO", ObjectInfo, "Objec
 DefNode(GeometryNode, GEO_NODE_RANDOM_ATTRIBUTE, def_geo_random_attribute, "RANDOM_ATTRIBUTE", RandomAttribute, "Random Attribute", "")
 DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_MATH, def_geo_attribute_math, "ATTRIBUTE_MATH", AttributeMath, "Attribute Math", "")
 DefNode(GeometryNode, GEO_NODE_JOIN_GEOMETRY, 0, "JOIN_GEOMETRY", JoinGeometry, "Join Geometry", "")
-DefNode(GeometryNode, GEO_NODE_MIX_ATTRIBUTES, def_geo_mix_attributes, "MIX_ATTRIBUTES", MixAttributes, "Mix Attributes", "")
+DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_MIX, def_geo_attribute_mix, "ATTRIBUTE_MIX", AttributeMix, "Attribute Mix", "")
 
 /* undefine macros */
 #undef DefNode

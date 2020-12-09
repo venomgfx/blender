@@ -3182,9 +3182,9 @@ static void node_geometry_buts_attribute_math(uiLayout *layout,
   uiItemR(layout, ptr, "input_type_b", DEFAULT_FLAGS, IFACE_("Type B"), ICON_NONE);
 }
 
-static void node_geometry_buts_mix_attributes(uiLayout *layout,
-                                              bContext *UNUSED(C),
-                                              PointerRNA *ptr)
+static void node_geometry_buts_attribute_mix(uiLayout *layout,
+                                             bContext *UNUSED(C),
+                                             PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "blend_type", DEFAULT_FLAGS, "", ICON_NONE);
 }
@@ -3207,8 +3207,8 @@ static void node_geometry_set_butfunc(bNodeType *ntype)
     case GEO_NODE_ATTRIBUTE_MATH:
       ntype->draw_buttons = node_geometry_buts_attribute_math;
       break;
-    case GEO_NODE_MIX_ATTRIBUTES:
-      ntype->draw_buttons = node_geometry_buts_mix_attributes;
+    case GEO_NODE_ATTRIBUTE_MIX:
+      ntype->draw_buttons = node_geometry_buts_attribute_mix;
       break;
   }
 }

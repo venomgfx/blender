@@ -8368,7 +8368,7 @@ static void def_geo_attribute_math(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
 }
 
-static void def_geo_mix_attributes(StructRNA *srna)
+static void def_geo_attribute_mix(StructRNA *srna)
 {
   PropertyRNA *prop;
 
