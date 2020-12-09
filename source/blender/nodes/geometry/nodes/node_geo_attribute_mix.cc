@@ -94,7 +94,8 @@ static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
                                             const GeoNodeExecParams &params,
                                             const AttributeDomain result_domain,
                                             const CustomDataType result_type,
-                                            const StringRef name)
+                                            const StringRef name,
+                                            const void *default_value)
 {
   const bNode &node = params.node();
   const bNodeSocket *found_socket = nullptr;
@@ -110,7 +111,7 @@ static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
 
   if (found_socket->type == SOCK_STRING) {
     const std::string name = params.get_input<std::string>(found_socket->identifier);
-    return component.attribute_get_for_read(name, result_domain, result_type, nullptr);
+    return component.attribute_get_for_read(name, result_domain, result_type, default_value);
   }
   if (found_socket->type == SOCK_FLOAT) {
     const float value = params.get_input<float>(found_socket->identifier);
@@ -128,7 +129,7 @@ static ReadAttributePtr get_input_attribute(const GeometryComponent &component,
         result_domain, CD_PROP_COLOR, result_type, &value);
   }
   BLI_assert(false);
-  return component.attribute_get_constant_for_read(result_domain, result_type, nullptr);
+  return component.attribute_get_constant_for_read(result_domain, result_type, default_value);
 }
 
 static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecParams &params)
@@ -153,20 +154,13 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
     return;
   }
 
-  FloatReadAttribute attribute_factor = [&]() {
-    if (node_storage->input_type_factor == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) {
-      const std::string name = params.get_input<std::string>("Factor");
-      return component.attribute_get_for_read<float>(name, result_domain, 0.5f);
-    }
-    const float factor = params.get_input<float>("Factor_001");
-    return component.attribute_get_constant_for_read(result_domain, factor);
-  }();
-
+  const float default_factor = 0.5f;
+  FloatReadAttribute attribute_factor = get_input_attribute(
+      component, params, result_domain, CD_PROP_FLOAT, "Factor", &default_factor);
   ReadAttributePtr attribute_a = get_input_attribute(
-      component, params, result_domain, result_type, "A");
-
+      component, params, result_domain, result_type, "A", nullptr);
   ReadAttributePtr attribute_b = get_input_attribute(
-      component, params, result_domain, result_type, "B");
+      component, params, result_domain, result_type, "B", nullptr);
 
   if (result_type == CD_PROP_FLOAT) {
     FloatReadAttribute attribute_a_float = std::move(attribute_a);
