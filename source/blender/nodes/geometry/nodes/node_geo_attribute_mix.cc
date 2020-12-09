@@ -27,6 +27,9 @@ static bNodeSocketTemplate geo_node_attribute_mix_in[] = {
     {SOCK_VECTOR, N_("Attribute A"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
     {SOCK_RGBA, N_("Attribute A"), 0.5, 0.5, 0.5, 1.0},
     {SOCK_STRING, N_("Attribute B")},
+    {SOCK_FLOAT, N_("Attribute B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_VECTOR, N_("Attribute B"), 0.0, 0.0, 0.0, 0.0, -FLT_MAX, FLT_MAX},
+    {SOCK_RGBA, N_("Attribute B"), 0.5, 0.5, 0.5, 1.0},
     {SOCK_STRING, N_("Result")},
     {-1, ""},
 };
@@ -205,6 +208,7 @@ static void geo_node_attribute_mix_update(bNodeTree *UNUSED(ntree), bNode *node)
   NodeAttributeMix *node_storage = (NodeAttributeMix *)node->storage;
   update_attribute_input_socket_availabilities(*node, "Factor", node_storage->input_type_factor);
   update_attribute_input_socket_availabilities(*node, "Attribute A", node_storage->input_type_a);
+  update_attribute_input_socket_availabilities(*node, "Attribute B", node_storage->input_type_b);
 }
 
 }  // namespace blender::nodes
