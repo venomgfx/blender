@@ -170,9 +170,9 @@ static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
   NodeAttributeMix *data = (NodeAttributeMix *)MEM_callocN(sizeof(NodeAttributeMix),
                                                            "attribute mix node");
   data->blend_type = MA_RAMP_BLEND;
-  data->input_type_factor = GEO_NODE_ATTRIBUTE_INPUT__FLOAT;
-  data->input_type_a = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
-  data->input_type_b = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
+  data->input_type_factor = GEO_NODE_ATTRIBUTE_INPUT_FLOAT;
+  data->input_type_a = GEO_NODE_ATTRIBUTE_INPUT_ATTRIBUTE;
+  data->input_type_b = GEO_NODE_ATTRIBUTE_INPUT_ATTRIBUTE;
   node->storage = data;
 }
 
@@ -184,10 +184,10 @@ static void update_attribute_input_socket_availabilities(bNode &node,
   LISTBASE_FOREACH (bNodeSocket *, socket, &node.inputs) {
     if (name == socket->name) {
       const bool is_available =
-          ((socket->type == SOCK_STRING && mode_ == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) ||
-           (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT__FLOAT) ||
-           (socket->type == SOCK_VECTOR && mode_ == GEO_NODE_ATTRIBUTE_INPUT__VECTOR) ||
-           (socket->type == SOCK_RGBA && mode_ == GEO_NODE_ATTRIBUTE_INPUT__COLOR));
+          ((socket->type == SOCK_STRING && mode_ == GEO_NODE_ATTRIBUTE_INPUT_ATTRIBUTE) ||
+           (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT_FLOAT) ||
+           (socket->type == SOCK_VECTOR && mode_ == GEO_NODE_ATTRIBUTE_INPUT_VECTOR) ||
+           (socket->type == SOCK_RGBA && mode_ == GEO_NODE_ATTRIBUTE_INPUT_COLOR));
       nodeSetSocketAvailability(socket, is_available);
     }
   }

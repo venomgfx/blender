@@ -1475,10 +1475,10 @@ typedef enum GeometryNodeUseAttributeFlag {
 } GeometryNodeUseAttributeFlag;
 
 typedef enum GeometryNodeAttributeInputMode {
-  GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE = 0,
-  GEO_NODE_ATTRIBUTE_INPUT__FLOAT = 1,
-  GEO_NODE_ATTRIBUTE_INPUT__VECTOR = 2,
-  GEO_NODE_ATTRIBUTE_INPUT__COLOR = 3,
+  GEO_NODE_ATTRIBUTE_INPUT_ATTRIBUTE = 0,
+  GEO_NODE_ATTRIBUTE_INPUT_FLOAT = 1,
+  GEO_NODE_ATTRIBUTE_INPUT_VECTOR = 2,
+  GEO_NODE_ATTRIBUTE_INPUT_COLOR = 3,
 } GeometryNodeAttributeInputMode;
 
 #ifdef __cplusplus
