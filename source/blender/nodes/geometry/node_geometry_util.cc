@@ -21,7 +21,7 @@ namespace blender::nodes {
 
 void update_attribute_input_socket_availabilities(bNode &node,
                                                   const StringRef name,
-                                                  const uint8_t mode)
+                                                  const GeometryNodeAttributeInputMode mode)
 {
   const GeometryNodeAttributeInputMode mode_ = (GeometryNodeAttributeInputMode)mode;
   LISTBASE_FOREACH (bNodeSocket *, socket, &node.inputs) {

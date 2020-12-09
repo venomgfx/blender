@@ -148,6 +148,10 @@ class GeoNodeExecParams {
     return self_object_;
   }
 
+  /**
+   * Creates a read-only attribute based on node inputs. The method automatically detects which
+   * input with the given name is available.
+   */
   ReadAttributePtr get_input_attribute(const StringRef name,
                                        const GeometryComponent &component,
                                        const AttributeDomain domain,

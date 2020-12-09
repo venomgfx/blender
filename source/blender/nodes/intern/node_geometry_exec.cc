@@ -35,6 +35,7 @@ ReadAttributePtr GeoNodeExecParams::get_input_attribute(const StringRef name,
       break;
     }
   }
+  BLI_assert(found_socket != nullptr);
 
   if (found_socket->type == SOCK_STRING) {
     const std::string name = this->get_input<std::string>(found_socket->identifier);
