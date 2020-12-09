@@ -8372,8 +8372,9 @@ static void def_geo_attribute_mix(StructRNA *srna)
 {
   PropertyRNA *prop;
 
+  RNA_def_struct_sdna_from(srna, "NodeAttributeMix", "storage");
+
   prop = RNA_def_property(srna, "blend_type", PROP_ENUM, PROP_NONE);
-  RNA_def_property_enum_sdna(prop, NULL, "custom1");
   RNA_def_property_enum_items(prop, rna_enum_ramp_blend_items);
   RNA_def_property_enum_default(prop, MA_RAMP_BLEND);
   RNA_def_property_ui_text(prop, "Blending Mode", "");

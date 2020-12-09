@@ -1059,6 +1059,16 @@ typedef struct NodeDenoise {
   char _pad[7];
 } NodeDenoise;
 
+typedef struct NodeAttributeMix {
+  /* e.g. MA_RAMP_BLEND. */
+  uint8_t blend_type;
+
+  /* GeometryNodeAttributeInputMode */
+  uint8_t input_type_factor;
+  uint8_t input_type_a;
+  uint8_t input_type_b;
+} NodeAttributeMix;
+
 /* script node mode */
 #define NODE_SCRIPT_INTERNAL 0
 #define NODE_SCRIPT_EXTERNAL 1
@@ -1463,6 +1473,13 @@ typedef enum GeometryNodeUseAttributeFlag {
   GEO_NODE_USE_ATTRIBUTE_A = (1 << 0),
   GEO_NODE_USE_ATTRIBUTE_B = (1 << 1),
 } GeometryNodeUseAttributeFlag;
+
+typedef enum GeometryNodeAttributeInputMode {
+  GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE = 0,
+  GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT = 1,
+  GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_VECTOR = 2,
+  GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_COLOR = 3,
+} GeometryNodeAttributeInputMode;
 
 #ifdef __cplusplus
 }

@@ -162,6 +162,17 @@ static void geo_node_attribute_mix_exec(GeoNodeExecParams params)
   params.set_output("Geometry", geometry_set);
 }
 
+static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
+{
+  NodeAttributeMix *data = (NodeAttributeMix *)MEM_callocN(sizeof(NodeAttributeMix),
+                                                           "attribute mix node");
+  data->blend_type = MA_RAMP_BLEND;
+  data->input_type_factor = GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT;
+  data->input_type_a = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
+  data->input_type_b = GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE;
+  node->storage = data;
+}
+
 }  // namespace blender::nodes
 
 void register_node_type_geo_attribute_mix()
@@ -170,6 +181,9 @@ void register_node_type_geo_attribute_mix()
 
   geo_node_type_base(&ntype, GEO_NODE_ATTRIBUTE_MIX, "Attribute Mix", NODE_CLASS_ATTRIBUTE, 0);
   node_type_socket_templates(&ntype, geo_node_attribute_mix_in, geo_node_mix_attribute_out);
+  node_type_init(&ntype, blender::nodes::geo_node_attribute_mix_init);
+  node_type_storage(
+      &ntype, "NodeAttributeMix", node_free_standard_storage, node_copy_standard_storage);
   ntype.geometry_node_execute = blender::nodes::geo_node_attribute_mix_exec;
   nodeRegisterType(&ntype);
 }
