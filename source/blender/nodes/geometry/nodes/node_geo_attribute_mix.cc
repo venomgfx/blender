@@ -176,23 +176,6 @@ static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
   node->storage = data;
 }
 
-static void update_attribute_input_socket_availabilities(bNode &node,
-                                                         const StringRef name,
-                                                         const uint8_t mode)
-{
-  const GeometryNodeAttributeInputMode mode_ = (GeometryNodeAttributeInputMode)mode;
-  LISTBASE_FOREACH (bNodeSocket *, socket, &node.inputs) {
-    if (name == socket->name) {
-      const bool is_available =
-          ((socket->type == SOCK_STRING && mode_ == GEO_NODE_ATTRIBUTE_INPUT_ATTRIBUTE) ||
-           (socket->type == SOCK_FLOAT && mode_ == GEO_NODE_ATTRIBUTE_INPUT_FLOAT) ||
-           (socket->type == SOCK_VECTOR && mode_ == GEO_NODE_ATTRIBUTE_INPUT_VECTOR) ||
-           (socket->type == SOCK_RGBA && mode_ == GEO_NODE_ATTRIBUTE_INPUT_COLOR));
-      nodeSetSocketAvailability(socket, is_available);
-    }
-  }
-}
-
 static void geo_node_attribute_mix_update(bNodeTree *UNUSED(ntree), bNode *node)
 {
   NodeAttributeMix *node_storage = (NodeAttributeMix *)node->storage;
