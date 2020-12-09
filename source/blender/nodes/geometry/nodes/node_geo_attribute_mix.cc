@@ -194,9 +194,12 @@ static void geo_node_attribute_mix_init(bNodeTree *UNUSED(ntree), bNode *node)
 static void geo_node_attribute_mix_update(bNodeTree *UNUSED(ntree), bNode *node)
 {
   NodeAttributeMix *node_storage = (NodeAttributeMix *)node->storage;
-  update_attribute_input_socket_availabilities(*node, "Factor", node_storage->input_type_factor);
-  update_attribute_input_socket_availabilities(*node, "A", node_storage->input_type_a);
-  update_attribute_input_socket_availabilities(*node, "B", node_storage->input_type_b);
+  update_attribute_input_socket_availabilities(
+      *node, "Factor", (GeometryNodeAttributeInputMode)node_storage->input_type_factor);
+  update_attribute_input_socket_availabilities(
+      *node, "A", (GeometryNodeAttributeInputMode)node_storage->input_type_a);
+  update_attribute_input_socket_availabilities(
+      *node, "B", (GeometryNodeAttributeInputMode)node_storage->input_type_b);
 }
 
 }  // namespace blender::nodes
