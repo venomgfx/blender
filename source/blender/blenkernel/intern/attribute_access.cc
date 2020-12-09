@@ -688,6 +688,8 @@ blender::bke::ReadAttributePtr GeometryComponent::attribute_get_constant_for_rea
 
   const blender::nodes::DataTypeConversions &conversions =
       blender::nodes::get_implicit_type_conversions();
+  BLI_assert(conversions.is_convertible(*in_cpp_type, *out_cpp_type));
+
   void *out_value = alloca(out_cpp_type->size());
   conversions.convert(*in_cpp_type, *out_cpp_type, value, out_value);
 
