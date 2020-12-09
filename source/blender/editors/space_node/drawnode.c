@@ -3187,6 +3187,7 @@ static void node_geometry_buts_attribute_mix(uiLayout *layout,
                                              PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "blend_type", DEFAULT_FLAGS, "", ICON_NONE);
+  uiItemR(layout, ptr, "input_type_factor", DEFAULT_FLAGS, "Factor", ICON_NONE);
 }
 
 static void node_geometry_set_butfunc(bNodeType *ntype)
