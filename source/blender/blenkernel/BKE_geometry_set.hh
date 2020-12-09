@@ -157,6 +157,12 @@ class GeometryComponent {
                                                                  const CustomDataType data_type,
                                                                  const void *value) const;
 
+  blender::bke::ReadAttributePtr attribute_get_constant_for_read_converted(
+      const AttributeDomain domain,
+      const CustomDataType in_data_type,
+      const CustomDataType out_data_type,
+      const void *value);
+
   /* Get a read-only dummy attribute that always returns the same value. */
   template<typename T>
   blender::bke::TypedReadAttribute<T> attribute_get_constant_for_read(const AttributeDomain domain,

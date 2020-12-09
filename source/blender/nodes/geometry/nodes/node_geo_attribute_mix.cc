@@ -95,7 +95,6 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
   const bNode &node = params.node();
   const NodeAttributeMix *node_storage = (const NodeAttributeMix *)node.storage;
 
-  const std::string attribute_a_name = params.get_input<std::string>("Attribute A");
   const std::string attribute_b_name = params.get_input<std::string>("Attribute B");
   const std::string result_name = params.get_input<std::string>("Result");
 
@@ -117,15 +116,39 @@ static void attribute_mix_calc(GeometryComponent &component, const GeoNodeExecPa
 
   FloatReadAttribute attribute_factor = [&]() {
     if (node_storage->input_type_factor == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) {
-      const std::string factor_name = params.get_input<std::string>("Factor");
-      return component.attribute_get_for_read<float>(factor_name, result_domain, 0.5f);
+      const std::string name = params.get_input<std::string>("Factor");
+      return component.attribute_get_for_read<float>(name, result_domain, 0.5f);
     }
     const float factor = params.get_input<float>("Factor_001");
     return component.attribute_get_constant_for_read(result_domain, factor);
   }();
 
-  ReadAttributePtr attribute_a = component.attribute_get_for_read(
-      attribute_a_name, result_domain, result_type, nullptr);
+  ReadAttributePtr attribute_a = [&]() {
+    if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__ATTRIBUTE) {
+      const std::string name = params.get_input<std::string>("Attribute A");
+      return component.attribute_get_for_read(name, result_domain, result_type, nullptr);
+    }
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_FLOAT) {
+      const float value = params.get_input<float>("Attribute A_001");
+      return component.attribute_get_constant_for_read_converted(
+          result_domain, CD_PROP_FLOAT, result_type, &value);
+    }
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_VECTOR) {
+      const float3 value = params.get_input<float3>("Attribute A_002");
+      return component.attribute_get_constant_for_read_converted(
+          result_domain, CD_PROP_FLOAT3, result_type, &value);
+    }
+    else if (node_storage->input_type_a == GEO_NODE_ATTRIBUTE_INPUT__CONSTANT_COLOR) {
+      const Color4f value = params.get_input<Color4f>("Attribute A_003");
+      return component.attribute_get_constant_for_read_converted(
+          result_domain, CD_PROP_COLOR, result_type, &value);
+    }
+    BLI_assert(false);
+    return component.attribute_get_constant_for_read(result_domain, result_type, nullptr);
+  }();
+
+  // ReadAttributePtr attribute_a = component.attribute_get_for_read(
+  //     attribute_a_name, result_domain, result_type, nullptr);
   ReadAttributePtr attribute_b = component.attribute_get_for_read(
       attribute_b_name, result_domain, result_type, nullptr);
 
