@@ -1059,6 +1059,10 @@ typedef struct NodeDenoise {
   char _pad[7];
 } NodeDenoise;
 
+typedef struct NodeAttributeColorRamp {
+  ColorBand color_ramp;
+} NodeAttributeColorRamp;
+
 /* script node mode */
 #define NODE_SCRIPT_INTERNAL 0
 #define NODE_SCRIPT_EXTERNAL 1
