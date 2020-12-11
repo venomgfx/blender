@@ -27,6 +27,7 @@
 #include "BLI_utildefines.h"
 
 #include "DNA_anim_types.h"
+#include "DNA_armature_types.h"
 #include "DNA_brush_types.h"
 #include "DNA_cachefile_types.h"
 #include "DNA_collection_types.h"
@@ -705,6 +706,19 @@ static void do_versions_strip_cache_settings_recursive(const ListBase *seqbase)
     if (seq->type == SEQ_TYPE_META) {
       do_versions_strip_cache_settings_recursive(&seq->seqbase);
     }
+  }
+}
+
+static void do_version_bones_bbone_len_scale(ListBase *lb)
+{
+  LISTBASE_FOREACH (Bone *, bone, lb) {
+    if (bone->flag & BONE_ADD_PARENT_END_ROLL) {
+      bone->bbone_flag |= BBONE_ADD_PARENT_END_ROLL;
+    }
+
+    bone->scale_in_len = bone->scale_out_len = 1.0f;
+
+    do_version_bones_bbone_len_scale(&bone->childbase);
   }
 }
 
@@ -1545,5 +1559,20 @@ void blo_do_versions_290(FileData *fd, Library *UNUSED(lib), Main *bmain)
    */
   {
     /* Keep this block, even when empty. */
+
+    if (!DNA_struct_elem_find(fd->filesdna, "bPoseChannel", "float", "scale_out_len")) {
+      /* Update armature data and pose channels. */
+      LISTBASE_FOREACH (bArmature *, arm, &bmain->armatures) {
+        do_version_bones_bbone_len_scale(&arm->bonebase);
+      }
+
+      LISTBASE_FOREACH (Object *, ob, &bmain->objects) {
+        if (ob->pose) {
+          LISTBASE_FOREACH (bPoseChannel *, pchan, &ob->pose->chanbase) {
+            pchan->scale_in_len = pchan->scale_out_len = 1.0f;
+          }
+        }
+      }
+    }
   }
 }
