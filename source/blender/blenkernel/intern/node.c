@@ -35,6 +35,7 @@
 
 #include "DNA_action_types.h"
 #include "DNA_anim_types.h"
+#include "DNA_collection_types.h"
 #include "DNA_gpencil_types.h"
 #include "DNA_light_types.h"
 #include "DNA_linestyle_types.h"
@@ -274,6 +275,11 @@ static void library_foreach_node_socket(LibraryForeachIDData *data, bNodeSocket 
       BKE_LIB_FOREACHID_PROCESS(data, default_value->value, IDWALK_CB_USER);
       break;
     }
+    case SOCK_COLLECTION: {
+      bNodeSocketValueCollection *default_value = sock->default_value;
+      BKE_LIB_FOREACHID_PROCESS(data, default_value->value, IDWALK_CB_USER);
+      break;
+    }
     case SOCK_FLOAT:
     case SOCK_VECTOR:
     case SOCK_RGBA:
@@ -372,6 +378,9 @@ static void write_node_socket_default_value(BlendWriter *writer, bNodeSocket *so
       break;
     case SOCK_IMAGE:
       BLO_write_struct(writer, bNodeSocketValueImage, sock->default_value);
+      break;
+    case SOCK_COLLECTION:
+      BLO_write_struct(writer, bNodeSocketValueCollection, sock->default_value);
       break;
     case __SOCK_MESH:
     case SOCK_CUSTOM:
@@ -484,6 +493,9 @@ void ntreeBlendWrite(BlendWriter *writer, bNodeTree *ntree)
         NodeCryptomatte *nc = (NodeCryptomatte *)node->storage;
         if (nc->matte_id) {
           BLO_write_string(writer, nc->matte_id);
+        }
+        LISTBASE_FOREACH (CryptomatteEntry *, entry, &nc->entries) {
+          BLO_write_struct(writer, CryptomatteEntry, entry);
         }
         BLO_write_struct_by_name(writer, node->typeinfo->storagename, node->storage);
       }
@@ -637,6 +649,7 @@ void ntreeBlendReadData(BlendDataReader *reader, bNodeTree *ntree)
         case CMP_NODE_CRYPTOMATTE: {
           NodeCryptomatte *nc = (NodeCryptomatte *)node->storage;
           BLO_read_data_address(reader, &nc->matte_id);
+          BLO_read_list(reader, &nc->entries);
           break;
         }
         case TEX_NODE_IMAGE: {
@@ -705,6 +718,11 @@ static void lib_link_node_socket(BlendLibReader *reader, Library *lib, bNodeSock
       break;
     }
     case SOCK_IMAGE: {
+      bNodeSocketValueImage *default_value = sock->default_value;
+      BLO_read_id_address(reader, lib, &default_value->value);
+      break;
+    }
+    case SOCK_COLLECTION: {
       bNodeSocketValueImage *default_value = sock->default_value;
       BLO_read_id_address(reader, lib, &default_value->value);
       break;
@@ -785,6 +803,11 @@ static void expand_node_socket(BlendExpander *expander, bNodeSocket *sock)
       }
       case SOCK_IMAGE: {
         bNodeSocketValueImage *default_value = sock->default_value;
+        BLO_expand(expander, default_value->value);
+        break;
+      }
+      case SOCK_COLLECTION: {
+        bNodeSocketValueCollection *default_value = sock->default_value;
         BLO_expand(expander, default_value->value);
         break;
       }
@@ -1345,6 +1368,11 @@ static void socket_id_user_increment(bNodeSocket *sock)
       id_us_plus((ID *)default_value->value);
       break;
     }
+    case SOCK_COLLECTION: {
+      bNodeSocketValueCollection *default_value = sock->default_value;
+      id_us_plus((ID *)default_value->value);
+      break;
+    }
     case SOCK_FLOAT:
     case SOCK_VECTOR:
     case SOCK_RGBA:
@@ -1369,6 +1397,11 @@ static void socket_id_user_decrement(bNodeSocket *sock)
     }
     case SOCK_IMAGE: {
       bNodeSocketValueImage *default_value = sock->default_value;
+      id_us_min(&default_value->value->id);
+      break;
+    }
+    case SOCK_COLLECTION: {
+      bNodeSocketValueCollection *default_value = sock->default_value;
       id_us_min(&default_value->value->id);
       break;
     }
@@ -1511,6 +1544,8 @@ const char *nodeStaticSocketType(int type, int subtype)
       return "NodeSocketImage";
     case SOCK_GEOMETRY:
       return "NodeSocketGeometry";
+    case SOCK_COLLECTION:
+      return "NodeSocketCollection";
   }
   return NULL;
 }
@@ -1578,6 +1613,8 @@ const char *nodeStaticSocketInterfaceType(int type, int subtype)
       return "NodeSocketInterfaceImage";
     case SOCK_GEOMETRY:
       return "NodeSocketInterfaceGeometry";
+    case SOCK_COLLECTION:
+      return "NodeSocketInterfaceCollection";
   }
   return NULL;
 }
@@ -3960,9 +3997,9 @@ void ntreeUpdateAllNew(Main *main)
   FOREACH_NODETREE_END;
 }
 
-void ntreeUpdateAllUsers(Main *main, bNodeTree *ngroup)
+void ntreeUpdateAllUsers(Main *main, ID *id)
 {
-  if (ngroup == NULL) {
+  if (id == NULL) {
     return;
   }
 
@@ -3971,7 +4008,7 @@ void ntreeUpdateAllUsers(Main *main, bNodeTree *ngroup)
     bool need_update = false;
 
     LISTBASE_FOREACH (bNode *, node, &ntree->nodes) {
-      if (node->id == &ngroup->id) {
+      if (node->id == id) {
         if (node->typeinfo->group_update_func) {
           node->typeinfo->group_update_func(ntree, node);
         }
@@ -3986,13 +4023,16 @@ void ntreeUpdateAllUsers(Main *main, bNodeTree *ngroup)
   }
   FOREACH_NODETREE_END;
 
-  if (ngroup->type == NTREE_GEOMETRY) {
-    LISTBASE_FOREACH (Object *, object, &main->objects) {
-      LISTBASE_FOREACH (ModifierData *, md, &object->modifiers) {
-        if (md->type == eModifierType_Nodes) {
-          NodesModifierData *nmd = (NodesModifierData *)md;
-          if (nmd->node_group == ngroup) {
-            MOD_nodes_update_interface(object, nmd);
+  if (GS(id->name) == ID_NT) {
+    bNodeTree *ngroup = (bNodeTree *)id;
+    if (ngroup->type == NTREE_GEOMETRY) {
+      LISTBASE_FOREACH (Object *, object, &main->objects) {
+        LISTBASE_FOREACH (ModifierData *, md, &object->modifiers) {
+          if (md->type == eModifierType_Nodes) {
+            NodesModifierData *nmd = (NodesModifierData *)md;
+            if (nmd->node_group == ngroup) {
+              MOD_nodes_update_interface(object, nmd);
+            }
           }
         }
       }
@@ -4041,7 +4081,7 @@ void ntreeUpdateTree(Main *bmain, bNodeTree *ntree)
   }
 
   if (bmain) {
-    ntreeUpdateAllUsers(bmain, ntree);
+    ntreeUpdateAllUsers(bmain, &ntree->id);
   }
 
   if (ntree->update & (NTREE_UPDATE_LINKS | NTREE_UPDATE_NODES)) {
@@ -4694,6 +4734,7 @@ static void registerGeometryNodes(void)
   register_node_type_geo_random_attribute();
   register_node_type_geo_attribute_math();
   register_node_type_geo_join_geometry();
+  register_node_type_geo_attribute_mix();
   register_node_type_geo_attribute_color_ramp();
 }
 
