@@ -3208,6 +3208,13 @@ static void node_geometry_buts_attribute_mix(uiLayout *layout,
   uiItemR(col, ptr, "input_type_b", DEFAULT_FLAGS, IFACE_("B"), ICON_NONE);
 }
 
+static void node_geometry_buts_sample_texture(uiLayout *layout,
+                                              bContext *UNUSED(C),
+                                              PointerRNA *ptr)
+{
+  uiItemR(layout, ptr, "texture", DEFAULT_FLAGS, "", ICON_NONE);
+}
+
 static void node_geometry_set_butfunc(bNodeType *ntype)
 {
   switch (ntype->type) {
@@ -3234,6 +3241,9 @@ static void node_geometry_set_butfunc(bNodeType *ntype)
       break;
     case GEO_NODE_ATTRIBUTE_MIX:
       ntype->draw_buttons = node_geometry_buts_attribute_mix;
+      break;
+    case GEO_NODE_SAMPLE_TEXTURE:
+      ntype->draw_buttons = node_geometry_buts_sample_texture;
       break;
   }
 }
