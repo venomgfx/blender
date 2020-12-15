@@ -279,6 +279,7 @@ DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_MATH, def_geo_attribute_math, "ATTRIBUT
 DefNode(GeometryNode, GEO_NODE_JOIN_GEOMETRY, 0, "JOIN_GEOMETRY", JoinGeometry, "Join Geometry", "")
 DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_FILL, def_geo_attribute_fill, "ATTRIBUTE_FILL", AttributeFill, "Attribute Fill", "")
 DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_MIX, def_geo_attribute_mix, "ATTRIBUTE_MIX", AttributeMix, "Attribute Mix", "")
+DefNode(GeometryNode, GEO_NODE_SAMPLE_TEXTURE, 0, "SAMPLE_TEXTURE", SampleTexture, "Sample Texture", "")
 
 /* undefine macros */
 #undef DefNode
