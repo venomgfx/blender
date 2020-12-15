@@ -1501,6 +1501,11 @@ typedef enum GeometryNodeAttributeInputMode {
   GEO_NODE_ATTRIBUTE_INPUT_COLOR = 3,
 } GeometryNodeAttributeInputMode;
 
+typedef enum GeometryNodeSampleTextureMode {
+  GEO_NODE_SAMPLE_TEXTURE_MODE_POSITION = 0,
+  GEO_NODE_SAMPLE_TEXTURE_MODE_UV = 1,
+} GeometryNodeSampleTextureMode;
+
 #ifdef __cplusplus
 }
 #endif

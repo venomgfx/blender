@@ -3212,6 +3212,7 @@ static void node_geometry_buts_sample_texture(uiLayout *layout,
                                               bContext *UNUSED(C),
                                               PointerRNA *ptr)
 {
+  uiItemR(layout, ptr, "mode", DEFAULT_FLAGS, "", ICON_NONE);
   uiItemR(layout, ptr, "texture", DEFAULT_FLAGS, "", ICON_NONE);
 }
 

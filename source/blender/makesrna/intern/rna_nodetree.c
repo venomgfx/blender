@@ -8483,6 +8483,20 @@ static void def_geo_attribute_mix(StructRNA *srna)
 
 static void def_geo_sample_texture(StructRNA *srna)
 {
+  static const EnumPropertyItem instance_type_items[] = {
+      {GEO_NODE_SAMPLE_TEXTURE_MODE_POSITION,
+       "POSITION",
+       ICON_NONE,
+       "Position",
+       "Use the position attribute to sample the texture"},
+      {GEO_NODE_SAMPLE_TEXTURE_MODE_UV,
+       "UV",
+       ICON_NONE,
+       "UV",
+       "Use a UV map attribute to sample the texture"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
   PropertyRNA *prop;
 
   prop = RNA_def_property(srna, "texture", PROP_POINTER, PROP_NONE);
@@ -8492,6 +8506,12 @@ static void def_geo_sample_texture(StructRNA *srna)
   RNA_def_property_override_flag(prop, PROPOVERRIDE_OVERRIDABLE_LIBRARY);
   RNA_def_property_ui_text(prop, "Texture", "Texture to sample values from");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update_relations");
+
+  prop = RNA_def_property(srna, "mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, instance_type_items);
+  RNA_def_property_ui_text(prop, "Mode", "");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
 }
 
 /* -------------------------------------------------------------------------- */
