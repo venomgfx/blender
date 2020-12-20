@@ -13,35 +13,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * The Original Code is Copyright (C) 2004 Blender Foundation.
- * All rights reserved.
+ * Copyright 2020, Blender Foundation.
  */
 
-#pragma once
+#ifndef __COM_EXPOSURENODE_H__
+#define __COM_EXPOSURENODE_H__
 
-/** \file
- * \ingroup sequencer
+#include "COM_Node.h"
+
+/**
+ * \brief ExposureNode
+ * \ingroup Node
  */
+class ExposureNode : public Node {
+ public:
+  ExposureNode(bNode *editorNode);
+  void convertToOperations(NodeConverter &converter, const CompositorContext &context) const;
+};
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct Scene;
-struct SeqRenderData;
-struct Sequence;
-
-#ifdef __cplusplus
-}
-#endif
-
-void seq_prefetch_start(const struct SeqRenderData *context, float timeline_frame);
-void seq_prefetch_free(struct Scene *scene);
-bool seq_prefetch_job_is_running(struct Scene *scene);
-void seq_prefetch_get_time_range(struct Scene *scene, int *start, int *end);
-struct SeqRenderData *seq_prefetch_get_original_context(const struct SeqRenderData *context);
-struct Sequence *seq_prefetch_get_original_sequence(struct Sequence *seq, struct Scene *scene);
-
-#ifdef __cplusplus
-}
 #endif

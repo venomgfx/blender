@@ -13,35 +13,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * The Original Code is Copyright (C) 2004 Blender Foundation.
- * All rights reserved.
+ * Copyright 2020, Blender Foundation.
  */
 
-#pragma once
+#ifndef __COM_COLOREXPOSUREOPERATION_H__
+#define __COM_COLOREXPOSUREOPERATION_H__
+#include "COM_NodeOperation.h"
 
-/** \file
- * \ingroup sequencer
- */
+class ExposureOperation : public NodeOperation {
+ private:
+  /**
+   * Cached reference to the inputProgram
+   */
+  SocketReader *m_inputProgram;
+  SocketReader *m_inputExposureProgram;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ public:
+  ExposureOperation();
 
-struct Scene;
-struct SeqRenderData;
-struct Sequence;
+  /**
+   * the inner loop of this program
+   */
+  void executePixelSampled(float output[4], float x, float y, PixelSampler sampler);
 
-#ifdef __cplusplus
-}
-#endif
+  /**
+   * Initialize the execution
+   */
+  void initExecution();
 
-void seq_prefetch_start(const struct SeqRenderData *context, float timeline_frame);
-void seq_prefetch_free(struct Scene *scene);
-bool seq_prefetch_job_is_running(struct Scene *scene);
-void seq_prefetch_get_time_range(struct Scene *scene, int *start, int *end);
-struct SeqRenderData *seq_prefetch_get_original_context(const struct SeqRenderData *context);
-struct Sequence *seq_prefetch_get_original_sequence(struct Sequence *seq, struct Scene *scene);
-
-#ifdef __cplusplus
-}
+  /**
+   * Deinitialize the execution
+   */
+  void deinitExecution();
+};
 #endif
