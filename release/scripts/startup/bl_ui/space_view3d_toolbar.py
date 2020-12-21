@@ -1693,8 +1693,6 @@ class VIEW3D_PT_tools_grease_pencil_interpolate(Panel):
 
         col = layout.column(align=True)
         col.label(text="Interpolate Strokes")
-        col.operator("gpencil.interpolate_set", text="Set")
-        col.separator()
         col.operator("gpencil.interpolate", text="Interpolate")
         col.operator("gpencil.interpolate_sequence", text="Sequence")
         col.operator("gpencil.interpolate_reverse", text="Remove Breakdowns")
@@ -1706,6 +1704,8 @@ class VIEW3D_PT_tools_grease_pencil_interpolate(Panel):
         gpd = context.gpencil_data
         if gpd.use_stroke_edit_mode:
             col.prop(settings, "interpolate_selected_only")
+            if settings.interpolate_selected_only:
+                col.operator("gpencil.interpolate_set", text="Set")
 
         col = layout.column(align=True)
         col.label(text="Sequence Options:")
