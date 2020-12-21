@@ -2112,6 +2112,25 @@ class _defs_gpencil_edit:
             draw_settings=draw_settings,
         )
 
+    @ToolDef.from_fn
+    def interpolate():
+        def draw_settings(context, layout, tool):
+            props = tool.operator_properties("gpencil.interpolate")
+            row = layout.row()
+            row.prop(props, "interpolate_all_layers")
+            row.prop(props, "interpolate_selected_only")
+            row.prop(props, "flip")
+
+        return dict(
+            idname="builtin.interpolate",
+            label="Interpolate",
+            icon="ops.pose.breakdowner",
+            cursor='DEFAULT',
+            widget=None,
+            keymap=(),
+            draw_settings=draw_settings,
+        )
+
 
 class _defs_gpencil_sculpt:
 
@@ -2816,6 +2835,8 @@ class VIEW3D_PT_tools_active(ToolSelectPanelHelper, Panel):
             ),
             None,
             _defs_gpencil_edit.transform_fill,
+            None,
+            _defs_gpencil_edit.interpolate,
             None,
             *_tools_annotate,
         ],

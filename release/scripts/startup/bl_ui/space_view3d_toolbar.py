@@ -1692,24 +1692,16 @@ class VIEW3D_PT_tools_grease_pencil_interpolate(Panel):
         settings = context.tool_settings.gpencil_interpolate
 
         col = layout.column(align=True)
-        col.label(text="Interpolate Strokes")
-        col.operator("gpencil.interpolate", text="Interpolate")
-        col.operator("gpencil.interpolate_sequence", text="Sequence")
-        col.operator("gpencil.interpolate_reverse", text="Remove Breakdowns")
+        # col.label(text="Interpolate Strokes")
+        # col.operator("gpencil.interpolate_sequence", text="Sequence")
+        # col.operator("gpencil.interpolate_reverse", text="Remove Breakdowns")
 
         col = layout.column(align=True)
-        col.label(text="Options:")
-        col.prop(settings, "interpolate_all_layers")
-
+        # col.label(text="Options:")
         gpd = context.gpencil_data
-        if gpd.use_stroke_edit_mode:
-            col.prop(settings, "interpolate_selected_only")
-            if settings.interpolate_selected_only:
-                col.operator("gpencil.interpolate_set", text="Set")
 
         col = layout.column(align=True)
         col.label(text="Sequence Options:")
-        col.prop(settings, "step")
         col.prop(settings, "type")
         if settings.type == 'CUSTOM':
             # TODO: Options for loading/saving curve presets?

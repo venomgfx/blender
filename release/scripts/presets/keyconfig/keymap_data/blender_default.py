@@ -6769,6 +6769,17 @@ def km_3d_view_tool_edit_gpencil_transform_fill(params):
     )
 
 
+def km_3d_view_tool_edit_gpencil_interpolate(params):
+    return (
+        "3D View Tool: Edit Gpencil, Interpolate",
+        {"space_type": 'VIEW_3D', "region_type": 'WINDOW'},
+        {"items": [
+            ("gpencil.interpolate", {"type": params.tool_tweak, "value": 'ANY'},
+             {"properties": [("release_confirm", True)]}),
+        ]},
+    )
+
+
 def km_3d_view_tool_sculpt_gpencil_select(params):
     return (
         "3D View Tool: Sculpt Gpencil, Tweak",
@@ -7094,6 +7105,7 @@ def generate_keymaps(params=None):
         km_3d_view_tool_edit_gpencil_shear(params),
         km_3d_view_tool_edit_gpencil_to_sphere(params),
         km_3d_view_tool_edit_gpencil_transform_fill(params),
+        km_3d_view_tool_edit_gpencil_interpolate(params),
         km_3d_view_tool_sculpt_gpencil_select(params),
         km_3d_view_tool_sculpt_gpencil_select_box(params),
         km_3d_view_tool_sculpt_gpencil_select_circle(params),

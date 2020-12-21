@@ -2679,20 +2679,6 @@ static void rna_def_gpencil_interpolate(BlenderRNA *brna)
                          "Grease Pencil Interpolate Settings",
                          "Settings for Grease Pencil interpolation tools");
 
-  /* flags */
-  prop = RNA_def_property(srna, "interpolate_all_layers", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS);
-  RNA_def_property_ui_text(
-      prop, "Interpolate All Layers", "Interpolate all layers, not only active");
-  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, NULL);
-
-  prop = RNA_def_property(srna, "interpolate_selected_only", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
-  RNA_def_property_ui_text(prop,
-                           "Interpolate Selected Strokes",
-                           "Interpolate only selected strokes in the original frame");
-  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, NULL);
-
   /* interpolation type */
   prop = RNA_def_property(srna, "type", PROP_ENUM, PROP_NONE);
   RNA_def_property_enum_sdna(prop, NULL, "type");
@@ -2700,12 +2686,6 @@ static void rna_def_gpencil_interpolate(BlenderRNA *brna)
   RNA_def_property_enum_funcs(prop, NULL, "rna_GPencilInterpolateSettings_type_set", NULL);
   RNA_def_property_ui_text(
       prop, "Type", "Interpolation method to use the next time 'Interpolate Sequence' is run");
-  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, NULL);
-
-  prop = RNA_def_property(srna, "step", PROP_INT, PROP_NONE);
-  RNA_def_property_range(prop, 1, MAXFRAME);
-  RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
-  RNA_def_property_ui_text(prop, "Step", "Number of frames between generated interpolated frames");
   RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, NULL);
 
   /* easing */
@@ -4241,8 +4221,9 @@ void rna_def_view_layer_common(StructRNA *srna, const bool scene)
 
   prop = RNA_def_property(srna, "use_ztransp", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, NULL, "layflag", SCE_LAY_ZTRA);
-  RNA_def_property_ui_text(
-      prop, "Z-Transparent", "Render Z-transparent faces in this layer (on top of Solid and Halos)");
+  RNA_def_property_ui_text(prop,
+                           "Z-Transparent",
+                           "Render Z-transparent faces in this layer (on top of Solid and Halos)");
   if (scene) {
     RNA_def_property_update(prop, NC_SCENE | ND_RENDER_OPTIONS, NULL);
   }

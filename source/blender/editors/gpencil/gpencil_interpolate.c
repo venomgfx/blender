@@ -375,6 +375,10 @@ static void gpencil_interpolate_set_points(bContext *C, tGPDinterpolate *tgpi)
         BKE_gpencil_stroke_uniform_subdivide(gpd, gps_from, gps_to->totpoints, true);
       }
 
+      if (tgpi->flag & GP_TOOLFLAG_INTERPOLATE_FLIP) {
+        BKE_gpencil_stroke_flip(gps_to);
+      }
+
       /* Create new stroke. */
       bGPDstroke *new_stroke = BKE_gpencil_stroke_duplicate(gps_from, true, true);
       new_stroke->flag |= GP_STROKE_TAG;
@@ -504,15 +508,12 @@ static void gpencil_interpolate_exit(bContext *C, wmOperator *op)
 /* Init new temporary interpolation data */
 static bool gpencil_interpolate_set_init_values(bContext *C, wmOperator *op, tGPDinterpolate *tgpi)
 {
-  ToolSettings *ts = CTX_data_tool_settings(C);
-
   /* set current scene and window */
   tgpi->depsgraph = CTX_data_ensure_evaluated_depsgraph(C);
   tgpi->scene = CTX_data_scene(C);
   tgpi->area = CTX_wm_area(C);
   tgpi->region = CTX_wm_region(C);
   tgpi->ob = CTX_data_active_object(C);
-  tgpi->flag = ts->gp_interpolate.flag;
 
   /* set current frame number */
   tgpi->cframe = tgpi->scene->r.cfra;
@@ -522,6 +523,13 @@ static bool gpencil_interpolate_set_init_values(bContext *C, wmOperator *op, tGP
 
   /* set interpolation weight */
   tgpi->shift = RNA_float_get(op->ptr, "shift");
+  SET_FLAG_FROM_TEST(tgpi->flag,
+                     RNA_boolean_get(op->ptr, "interpolate_all_layers"),
+                     GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS);
+  SET_FLAG_FROM_TEST(tgpi->flag,
+                     RNA_boolean_get(op->ptr, "interpolate_selected_only"),
+                     GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
+  SET_FLAG_FROM_TEST(tgpi->flag, RNA_boolean_get(op->ptr, "flip"), GP_TOOLFLAG_INTERPOLATE_FLIP);
 
   /* Untag strokes to be sure nothing is pending due any canceled process. */
   LISTBASE_FOREACH (bGPDlayer *, gpl, &tgpi->gpd->layers) {
@@ -739,6 +747,8 @@ static void gpencil_interpolate_cancel(bContext *C, wmOperator *op)
 
 void GPENCIL_OT_interpolate(wmOperatorType *ot)
 {
+  PropertyRNA *prop;
+
   /* identifiers */
   ot->name = "Grease Pencil Interpolation";
   ot->idname = "GPENCIL_OT_interpolate";
@@ -764,6 +774,27 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
       "Bias factor for which frame has more influence on the interpolated strokes",
       -0.9f,
       0.9f);
+
+  RNA_def_boolean(ot->srna,
+                  "interpolate_all_layers",
+                  0,
+                  "All Layers",
+                  "Interpolate all layers, not only active");
+
+  RNA_def_boolean(ot->srna,
+                  "interpolate_selected_only",
+                  0,
+                  "Only Selected",
+                  "Interpolate only selected strokes");
+
+  RNA_def_boolean(ot->srna,
+                  "flip",
+                  0,
+                  "Flip",
+                  "Invert destination stroke to match start and end with source stroke");
+
+  prop = RNA_def_boolean(ot->srna, "release_confirm", 0, "Confirm on Release", "");
+  RNA_def_property_flag(prop, PROP_HIDDEN | PROP_SKIP_SAVE);
 }
 
 /* ****************** Interpolate Sequence *********************** */
@@ -982,10 +1013,10 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   int cfra = CFRA;
 
   GP_Interpolate_Settings *ipo_settings = &ts->gp_interpolate;
-  eGP_Interpolate_SettingsFlag flag = ipo_settings->flag;
-  const int step = ipo_settings->step;
+  const int step = RNA_int_get(op->ptr, "step");
   const bool is_multiedit = (bool)GPENCIL_MULTIEDIT_SESSIONS_ON(gpd);
-  const bool only_selected = ((flag & GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED) != 0);
+  const bool all_layers = RNA_boolean_get(op->ptr, "interpolate_all_layers");
+  const bool only_selected = RNA_boolean_get(op->ptr, "interpolate_selected_only");
 
   /* Cannot interpolate if not between 2 frames. */
   bGPDframe *gpf_prv = gpencil_get_previous_keyframe(active_gpl, cfra);
@@ -1001,7 +1032,7 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   /* loop all layer to check if need interpolation */
   LISTBASE_FOREACH (bGPDlayer *, gpl, &gpd->layers) {
     /* all layers or only active */
-    if (((flag & GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS) == 0) && (gpl != active_gpl)) {
+    if ((!all_layers) && (gpl != active_gpl)) {
       continue;
     }
     /* only editable and visible layers are considered */
@@ -1140,6 +1171,28 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
   /* api callbacks */
   ot->exec = gpencil_interpolate_seq_exec;
   ot->poll = gpencil_view3d_poll;
+
+  RNA_def_int(ot->srna,
+              "step",
+              1,
+              1,
+              MAXFRAME,
+              "Step",
+              "Number of frames between generated interpolated frames",
+              1,
+              MAXFRAME);
+
+  RNA_def_boolean(ot->srna,
+                  "interpolate_all_layers",
+                  0,
+                  "All Layers",
+                  "Interpolate all layers, not only active");
+
+  RNA_def_boolean(ot->srna,
+                  "interpolate_selected_only",
+                  0,
+                  "Only Selected",
+                  "Interpolate only selected strokes");
 
   /* flags */
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
