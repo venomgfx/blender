@@ -132,7 +132,8 @@ static void gpencil_stroke_pair_table(bContext *C,
                                       tGPDinterpolate_layer *tgpil)
 {
   bGPdata *gpd = tgpi->gpd;
-  const bool only_selected = ((tgpi->flag & GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED) != 0);
+  const bool only_selected = ((GPENCIL_EDIT_MODE(gpd)) &&
+                              ((tgpi->flag & GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED) != 0));
   const bool is_multiedit = (bool)GPENCIL_MULTIEDIT_SESSIONS_ON(gpd);
 
   /* Create hash tablets with relationship between strokes. */
@@ -143,8 +144,7 @@ static void gpencil_stroke_pair_table(bContext *C,
   LISTBASE_FOREACH (bGPDstroke *, gps_from, &tgpil->prevFrame->strokes) {
     bGPDstroke *gps_to = NULL;
     /* only selected */
-    if ((GPENCIL_EDIT_MODE(gpd)) && (only_selected) &&
-        ((gps_from->flag & GP_STROKE_SELECT) == 0)) {
+    if ((only_selected) && ((gps_from->flag & GP_STROKE_SELECT) == 0)) {
       continue;
     }
     /* skip strokes that are invalid for current view */
@@ -520,14 +520,14 @@ static bool gpencil_interpolate_set_init_values(bContext *C, wmOperator *op, tGP
 
   /* set GP datablock */
   tgpi->gpd = tgpi->ob->data;
-
   /* set interpolation weight */
   tgpi->shift = RNA_float_get(op->ptr, "shift");
   SET_FLAG_FROM_TEST(
       tgpi->flag, (RNA_enum_get(op->ptr, "layers") == 1), GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS);
-  SET_FLAG_FROM_TEST(tgpi->flag,
-                     RNA_boolean_get(op->ptr, "interpolate_selected_only"),
-                     GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
+  SET_FLAG_FROM_TEST(
+      tgpi->flag,
+      ((GPENCIL_EDIT_MODE(tgpi->gpd)) && (RNA_boolean_get(op->ptr, "interpolate_selected_only"))),
+      GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
   SET_FLAG_FROM_TEST(tgpi->flag, RNA_boolean_get(op->ptr, "flip"), GP_TOOLFLAG_INTERPOLATE_FLIP);
 
   /* Untag strokes to be sure nothing is pending due any canceled process. */
@@ -818,10 +818,10 @@ static float gpencil_interpolate_seq_easing_calc(wmOperator *op,
   const float amplitude = RNA_float_get(op->ptr, "amplitude");
   const float period = RNA_float_get(op->ptr, "period");
   const eBezTriple_Easing easing = RNA_enum_get(op->ptr, "easing");
-
+  const eGP_Interpolate_Type type = RNA_enum_get(op->ptr, "type");
   float result = time;
 
-  switch (RNA_enum_get(op->ptr, "type")) {
+  switch (type) {
     case GP_IPO_BACK:
       switch (easing) {
         case BEZT_IPO_EASE_IN:
@@ -1024,9 +1024,11 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   const int step = RNA_int_get(op->ptr, "step");
   const bool is_multiedit = (bool)GPENCIL_MULTIEDIT_SESSIONS_ON(gpd);
   const bool all_layers = (bool)(RNA_enum_get(op->ptr, "layers") == 1);
-  const bool only_selected = RNA_boolean_get(op->ptr, "interpolate_selected_only");
+  const bool only_selected = ((GPENCIL_EDIT_MODE(gpd)) &&
+                              (RNA_boolean_get(op->ptr, "interpolate_selected_only") != 0));
+
   const bool flip = RNA_boolean_get(op->ptr, "flip");
-  const int type = RNA_enum_get(op->ptr, "type");
+  const eGP_Interpolate_Type type = RNA_enum_get(op->ptr, "type");
 
   if (ipo_settings->custom_ipo == NULL) {
     ipo_settings->custom_ipo = BKE_curvemapping_add(1, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -1190,7 +1192,7 @@ static void gpencil_interpolate_seq_ui(bContext *C, wmOperator *op)
 
   RNA_pointer_create(NULL, op->type->srna, op->properties, &ptr);
 
-  int type = RNA_enum_get(&ptr, "type");
+  const eGP_Interpolate_Type type = RNA_enum_get(op->ptr, "type");
 
   uiLayoutSetPropSep(layout, true);
   uiLayoutSetPropDecorate(layout, false);
@@ -1236,7 +1238,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
       {0, NULL, 0, NULL, NULL},
   };
 
-  static const EnumPropertyItem gpencil_interpolation_mode_items[] = {
+  static const EnumPropertyItem gpencil_interpolation_type_items[] = {
       /* interpolation */
       {0, "", 0, N_("Interpolation"), "Standard transitions between keyframes"},
       {GP_IPO_LINEAR,
@@ -1356,7 +1358,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
 
   RNA_def_enum(ot->srna,
                "type",
-               gpencil_interpolation_mode_items,
+               gpencil_interpolation_type_items,
                0,
                "Type",
                "Interpolation method to use the next time 'Interpolate Sequence' is run");
