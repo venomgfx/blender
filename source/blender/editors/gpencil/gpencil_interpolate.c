@@ -1198,15 +1198,12 @@ static void gpencil_interpolate_seq_ui(bContext *C, wmOperator *op)
   if (type == GP_IPO_CURVEMAP) {
     /* Get an RNA pointer to ToolSettings to give to the custom curve. */
     Scene *scene = CTX_data_scene(C);
-    ToolSettings *ts = CTX_data_tool_settings(C);
+    ToolSettings *ts = scene->toolsettings;
     PointerRNA gpsettings_ptr;
     RNA_pointer_create(
         &scene->id, &RNA_GPencilInterpolateSettings, &ts->gp_interpolate, &gpsettings_ptr);
-    uiTemplateCurveProfile(layout, &gpsettings_ptr, "interpolation_curve");
-
-    // PointerRNA toolsettings_ptr;
-    // RNA_pointer_create(&scene->id, &RNA_ToolSettings, scene->toolsettings, &toolsettings_ptr);
-    // uiTemplateCurveProfile(layout, &toolsettings_ptr, "custom_bevel_profile_preset");
+    uiTemplateCurveMapping(
+        layout, &gpsettings_ptr, "interpolation_curve", 0, false, true, true, false);
   }
   else if (type != GP_IPO_LINEAR) {
     row = uiLayoutRow(layout, false);
