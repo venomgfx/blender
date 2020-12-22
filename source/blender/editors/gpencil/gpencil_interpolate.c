@@ -523,9 +523,8 @@ static bool gpencil_interpolate_set_init_values(bContext *C, wmOperator *op, tGP
 
   /* set interpolation weight */
   tgpi->shift = RNA_float_get(op->ptr, "shift");
-  SET_FLAG_FROM_TEST(tgpi->flag,
-                     RNA_boolean_get(op->ptr, "interpolate_all_layers"),
-                     GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS);
+  SET_FLAG_FROM_TEST(
+      tgpi->flag, (RNA_enum_get(op->ptr, "layers") == 1), GP_TOOLFLAG_INTERPOLATE_ALL_LAYERS);
   SET_FLAG_FROM_TEST(tgpi->flag,
                      RNA_boolean_get(op->ptr, "interpolate_selected_only"),
                      GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
@@ -763,6 +762,12 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
   /* flags */
   ot->flag = OPTYPE_UNDO | OPTYPE_BLOCKING;
 
+  static const EnumPropertyItem gpencil_interpolation_layer_items[] = {
+      {0, "ACTIVE", 0, "Active", ""},
+      {1, "ALL", 0, "All Layers", ""},
+      {0, NULL, 0, NULL, NULL},
+  };
+
   /* properties */
   RNA_def_float_percentage(
       ot->srna,
@@ -775,11 +780,12 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
       -0.9f,
       0.9f);
 
-  RNA_def_boolean(ot->srna,
-                  "interpolate_all_layers",
-                  0,
-                  "All Layers",
-                  "Interpolate all layers, not only active");
+  RNA_def_enum(ot->srna,
+               "layers",
+               gpencil_interpolation_layer_items,
+               0,
+               "Layer",
+               "Layers included in the interpolation");
 
   RNA_def_boolean(ot->srna,
                   "interpolate_selected_only",
@@ -800,20 +806,22 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
 /* ****************** Interpolate Sequence *********************** */
 
 /* Helper: Perform easing equation calculations for GP interpolation operator */
-static float gpencil_interpolate_seq_easing_calc(GP_Interpolate_Settings *ipo_settings, float time)
+static float gpencil_interpolate_seq_easing_calc(wmOperator *op,
+                                                 GP_Interpolate_Settings *ipo_settings,
+                                                 float time)
 {
   const float begin = 0.0f;
   const float change = 1.0f;
   const float duration = 1.0f;
 
-  const float back = ipo_settings->back;
-  const float amplitude = ipo_settings->amplitude;
-  const float period = ipo_settings->period;
+  const float back = RNA_float_get(op->ptr, "back");
+  const float amplitude = RNA_float_get(op->ptr, "amplitude");
+  const float period = RNA_float_get(op->ptr, "period");
+  const eBezTriple_Easing easing = RNA_enum_get(op->ptr, "easing");
 
-  eBezTriple_Easing easing = ipo_settings->easing;
   float result = time;
 
-  switch (ipo_settings->type) {
+  switch (RNA_enum_get(op->ptr, "type")) {
     case GP_IPO_BACK:
       switch (easing) {
         case BEZT_IPO_EASE_IN:
@@ -996,7 +1004,7 @@ static float gpencil_interpolate_seq_easing_calc(GP_Interpolate_Settings *ipo_se
       break;
 
     default:
-      printf("%s: Unknown interpolation type - %d\n", __func__, ipo_settings->type);
+      printf("%s: Unknown interpolation type\n", __func__);
       break;
   }
 
@@ -1015,8 +1023,14 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   GP_Interpolate_Settings *ipo_settings = &ts->gp_interpolate;
   const int step = RNA_int_get(op->ptr, "step");
   const bool is_multiedit = (bool)GPENCIL_MULTIEDIT_SESSIONS_ON(gpd);
-  const bool all_layers = RNA_boolean_get(op->ptr, "interpolate_all_layers");
+  const bool all_layers = (bool)(RNA_enum_get(op->ptr, "layers") == 1);
   const bool only_selected = RNA_boolean_get(op->ptr, "interpolate_selected_only");
+  const int type = RNA_enum_get(op->ptr, "type");
+
+  if (ipo_settings->custom_ipo == NULL) {
+    ipo_settings->custom_ipo = BKE_curvemapping_add(1, 0.0f, 0.0f, 1.0f, 1.0f);
+  }
+  BKE_curvemapping_init(ipo_settings->custom_ipo);
 
   /* Cannot interpolate if not between 2 frames. */
   bGPDframe *gpf_prv = gpencil_get_previous_keyframe(active_gpl, cfra);
@@ -1092,7 +1106,7 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
       CLAMP_MIN(framerange, 1.0f);
       float factor = (float)(cframe - prevFrame->framenum) / framerange;
 
-      if (ipo_settings->type == GP_IPO_CURVEMAP) {
+      if (type == GP_IPO_CURVEMAP) {
         /* custom curvemap */
         if (ipo_settings->custom_ipo) {
           factor = BKE_curvemapping_evaluateF(ipo_settings->custom_ipo, 0, factor);
@@ -1102,9 +1116,9 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
           continue;
         }
       }
-      else if (ipo_settings->type >= GP_IPO_BACK) {
+      else if (type >= GP_IPO_BACK) {
         /* easing equation... */
-        factor = gpencil_interpolate_seq_easing_calc(ipo_settings, factor);
+        factor = gpencil_interpolate_seq_easing_calc(op, ipo_settings, factor);
       }
 
       /* Apply the factor to all pair of strokes. */
@@ -1161,8 +1175,142 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   return OPERATOR_FINISHED;
 }
 
+static void gpencil_interpolate_seq_ui(bContext *C, wmOperator *op)
+{
+  uiLayout *layout = op->layout;
+  uiLayout *col, *row;
+  PointerRNA ptr;
+
+  RNA_pointer_create(NULL, op->type->srna, op->properties, &ptr);
+
+  int type = RNA_enum_get(&ptr, "type");
+
+  uiLayoutSetPropSep(layout, true);
+  uiLayoutSetPropDecorate(layout, false);
+
+  col = uiLayoutColumn(layout, true);
+  uiItemR(col, &ptr, "step", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "layers", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "interpolate_selected_only", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "flip", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "type", 0, NULL, ICON_NONE);
+
+  if (type == GP_IPO_CURVEMAP) {
+    /* Get an RNA pointer to ToolSettings to give to the custom curve. */
+    Scene *scene = CTX_data_scene(C);
+    ToolSettings *ts = CTX_data_tool_settings(C);
+    PointerRNA gpsettings_ptr;
+    RNA_pointer_create(
+        &scene->id, &RNA_GPencilInterpolateSettings, &ts->gp_interpolate, &gpsettings_ptr);
+    uiTemplateCurveProfile(layout, &gpsettings_ptr, "interpolation_curve");
+
+    // PointerRNA toolsettings_ptr;
+    // RNA_pointer_create(&scene->id, &RNA_ToolSettings, scene->toolsettings, &toolsettings_ptr);
+    // uiTemplateCurveProfile(layout, &toolsettings_ptr, "custom_bevel_profile_preset");
+  }
+  else if (type != GP_IPO_LINEAR) {
+    row = uiLayoutRow(layout, false);
+    uiItemR(row, &ptr, "easing", 0, NULL, ICON_NONE);
+    if (type == GP_IPO_BACK) {
+      row = uiLayoutRow(layout, false);
+      uiItemR(row, &ptr, "back", 0, NULL, ICON_NONE);
+    }
+    else if (type == GP_IPO_ELASTIC) {
+      row = uiLayoutRow(layout, false);
+      uiItemR(row, &ptr, "amplitude", 0, NULL, ICON_NONE);
+      row = uiLayoutRow(layout, false);
+      uiItemR(row, &ptr, "period", 0, NULL, ICON_NONE);
+    }
+  }
+}
+
 void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
 {
+  static const EnumPropertyItem gpencil_interpolation_layer_items[] = {
+      {0, "ACTIVE", 0, "Active", ""},
+      {1, "ALL", 0, "All Layers", ""},
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  static const EnumPropertyItem gpencil_interpolation_mode_items[] = {
+      /* interpolation */
+      {0, "", 0, N_("Interpolation"), "Standard transitions between keyframes"},
+      {GP_IPO_LINEAR,
+       "LINEAR",
+       ICON_IPO_LINEAR,
+       "Linear",
+       "Straight-line interpolation between A and B (i.e. no ease in/out)"},
+      {GP_IPO_CURVEMAP,
+       "CUSTOM",
+       ICON_IPO_BEZIER,
+       "Custom",
+       "Custom interpolation defined using a curve map"},
+
+      /* easing */
+      {0,
+       "",
+       0,
+       N_("Easing (by strength)"),
+       "Predefined inertial transitions, useful for motion graphics (from least to most "
+       "''dramatic'')"},
+      {GP_IPO_SINE,
+       "SINE",
+       ICON_IPO_SINE,
+       "Sinusoidal",
+       "Sinusoidal easing (weakest, almost linear but with a slight curvature)"},
+      {GP_IPO_QUAD, "QUAD", ICON_IPO_QUAD, "Quadratic", "Quadratic easing"},
+      {GP_IPO_CUBIC, "CUBIC", ICON_IPO_CUBIC, "Cubic", "Cubic easing"},
+      {GP_IPO_QUART, "QUART", ICON_IPO_QUART, "Quartic", "Quartic easing"},
+      {GP_IPO_QUINT, "QUINT", ICON_IPO_QUINT, "Quintic", "Quintic easing"},
+      {GP_IPO_EXPO, "EXPO", ICON_IPO_EXPO, "Exponential", "Exponential easing (dramatic)"},
+      {GP_IPO_CIRC,
+       "CIRC",
+       ICON_IPO_CIRC,
+       "Circular",
+       "Circular easing (strongest and most dynamic)"},
+
+      {0, "", 0, N_("Dynamic Effects"), "Simple physics-inspired easing effects"},
+      {GP_IPO_BACK, "BACK", ICON_IPO_BACK, "Back", "Cubic easing with overshoot and settle"},
+      {GP_IPO_BOUNCE,
+       "BOUNCE",
+       ICON_IPO_BOUNCE,
+       "Bounce",
+       "Exponentially decaying parabolic bounce, like when objects collide"},
+      {GP_IPO_ELASTIC,
+       "ELASTIC",
+       ICON_IPO_ELASTIC,
+       "Elastic",
+       "Exponentially decaying sine wave, like an elastic band"},
+
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  static const EnumPropertyItem gpencil_interpolation_easing_items[] = {
+      {BEZT_IPO_EASE_AUTO,
+       "AUTO",
+       ICON_IPO_EASE_IN_OUT,
+       "Automatic Easing",
+       "Easing type is chosen automatically based on what the type of interpolation used "
+       "(e.g. 'Ease In' for transitional types, and 'Ease Out' for dynamic effects)"},
+
+      {BEZT_IPO_EASE_IN,
+       "EASE_IN",
+       ICON_IPO_EASE_IN,
+       "Ease In",
+       "Only on the end closest to the next keyframe"},
+      {BEZT_IPO_EASE_OUT,
+       "EASE_OUT",
+       ICON_IPO_EASE_OUT,
+       "Ease Out",
+       "Only on the end closest to the first keyframe"},
+      {BEZT_IPO_EASE_IN_OUT,
+       "EASE_IN_OUT",
+       ICON_IPO_EASE_IN_OUT,
+       "Ease In and Out",
+       "Segment between both keyframes"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
   /* identifiers */
   ot->name = "Interpolate Sequence";
   ot->idname = "GPENCIL_OT_interpolate_sequence";
@@ -1171,6 +1319,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
   /* api callbacks */
   ot->exec = gpencil_interpolate_seq_exec;
   ot->poll = gpencil_view3d_poll;
+  ot->ui = gpencil_interpolate_seq_ui;
 
   RNA_def_int(ot->srna,
               "step",
@@ -1182,17 +1331,66 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
               1,
               MAXFRAME);
 
-  RNA_def_boolean(ot->srna,
-                  "interpolate_all_layers",
-                  0,
-                  "All Layers",
-                  "Interpolate all layers, not only active");
+  RNA_def_enum(ot->srna,
+               "layers",
+               gpencil_interpolation_layer_items,
+               0,
+               "Layer",
+               "Layers included in the interpolation");
 
   RNA_def_boolean(ot->srna,
                   "interpolate_selected_only",
                   0,
                   "Only Selected",
                   "Interpolate only selected strokes");
+
+  RNA_def_boolean(ot->srna,
+                  "flip",
+                  0,
+                  "Flip",
+                  "Invert destination stroke to match start and end with source stroke");
+
+  RNA_def_enum(ot->srna,
+               "type",
+               gpencil_interpolation_mode_items,
+               0,
+               "Type",
+               "Interpolation method to use the next time 'Interpolate Sequence' is run");
+  RNA_def_enum(
+      ot->srna,
+      "easing",
+      gpencil_interpolation_easing_items,
+      0,
+      "Easing",
+      "Which ends of the segment between the preceding and following grease pencil frames "
+      "easing interpolation is applied to");
+  RNA_def_float(ot->srna,
+                "back",
+                0.0f,
+                0.0f,
+                FLT_MAX,
+                "Back",
+                "Amount of overshoot for 'back' easing",
+                0.0f,
+                FLT_MAX);
+  RNA_def_float(ot->srna,
+                "amplitude",
+                0.0f,
+                0.0f,
+                FLT_MAX,
+                "Amplitude",
+                "Amount to boost elastic bounces for 'elastic' easing",
+                0.0f,
+                FLT_MAX);
+  RNA_def_float(ot->srna,
+                "period",
+                0.0f,
+                -FLT_MAX,
+                FLT_MAX,
+                "Period",
+                "Time between bounces for elastic easing",
+                -FLT_MAX,
+                FLT_MAX);
 
   /* flags */
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;

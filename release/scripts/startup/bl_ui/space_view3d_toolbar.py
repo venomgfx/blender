@@ -1690,32 +1690,9 @@ class VIEW3D_PT_tools_grease_pencil_interpolate(Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.tool_settings.gpencil_interpolate
-
         col = layout.column(align=True)
-        # col.label(text="Interpolate Strokes")
-        # col.operator("gpencil.interpolate_sequence", text="Sequence")
-        # col.operator("gpencil.interpolate_reverse", text="Remove Breakdowns")
-
-        col = layout.column(align=True)
-        # col.label(text="Options:")
-        gpd = context.gpencil_data
-
-        col = layout.column(align=True)
-        col.label(text="Sequence Options:")
-        col.prop(settings, "type")
-        if settings.type == 'CUSTOM':
-            # TODO: Options for loading/saving curve presets?
-            col.template_curve_mapping(settings, "interpolation_curve", brush=True,
-                                       use_negative_slope=True)
-        elif settings.type != 'LINEAR':
-            col.prop(settings, "easing")
-
-            if settings.type == 'BACK':
-                layout.prop(settings, "back")
-            elif settings.type == 'ELASTIC':
-                sub = layout.column(align=True)
-                sub.prop(settings, "amplitude")
-                sub.prop(settings, "period")
+        col.template_curve_mapping(settings, "interpolation_curve", brush=True,
+                                    use_negative_slope=True)
 
 
 # Grease Pencil stroke sculpting tools

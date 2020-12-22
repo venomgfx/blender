@@ -2117,7 +2117,7 @@ class _defs_gpencil_edit:
         def draw_settings(context, layout, tool):
             props = tool.operator_properties("gpencil.interpolate")
             row = layout.row()
-            row.prop(props, "interpolate_all_layers")
+            row.prop(props, "layers")
             row.prop(props, "interpolate_selected_only")
             row.prop(props, "flip")
 
