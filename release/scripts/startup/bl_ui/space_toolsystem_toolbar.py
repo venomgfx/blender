@@ -1949,6 +1949,24 @@ class _defs_gpencil_paint:
             draw_settings=draw_settings,
         )
 
+    @ToolDef.from_fn
+    def interpolate():
+        def draw_settings(context, layout, tool):
+            props = tool.operator_properties("gpencil.interpolate")
+            row = layout.row()
+            row.prop(props, "layers")
+            row.prop(props, "flip")
+
+        return dict(
+            idname="builtin.interpolate",
+            label="Interpolate",
+            icon="ops.pose.breakdowner",
+            cursor='DEFAULT',
+            widget=None,
+            keymap=(),
+            draw_settings=draw_settings,
+        )
+
 
 class _defs_gpencil_edit:
     def is_segment(context):
@@ -2819,6 +2837,8 @@ class VIEW3D_PT_tools_active(ToolSelectPanelHelper, Panel):
             _defs_gpencil_paint.circle,
             None,
             *_tools_annotate,
+            None,
+            _defs_gpencil_paint.interpolate,
         ],
         'EDIT_GPENCIL': [
             *_tools_gpencil_select,

@@ -1672,29 +1672,6 @@ class VIEW3D_PT_tools_grease_pencil_brush_paint_falloff(GreasePencilBrushFalloff
         return (settings and settings.brush and settings.brush.curve and tool == 'TINT')
 
 
-# Grease Pencil stroke interpolation tools
-class VIEW3D_PT_tools_grease_pencil_interpolate(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'HEADER'
-    bl_label = "Interpolate"
-
-    @classmethod
-    def poll(cls, context):
-        if context.gpencil_data is None:
-            return False
-
-        gpd = context.gpencil_data
-        valid_mode = bool(gpd.use_stroke_edit_mode or gpd.is_stroke_paint_mode)
-        return bool(context.editable_gpencil_strokes) and valid_mode
-
-    def draw(self, context):
-        layout = self.layout
-        settings = context.tool_settings.gpencil_interpolate
-        col = layout.column(align=True)
-        col.template_curve_mapping(settings, "interpolation_curve", brush=True,
-                                    use_negative_slope=True)
-
-
 # Grease Pencil stroke sculpting tools
 class GreasePencilSculptPanel:
     bl_context = ".greasepencil_sculpt"
@@ -2216,7 +2193,6 @@ classes = (
     VIEW3D_PT_tools_grease_pencil_vertex_paint_select,
     VIEW3D_PT_tools_grease_pencil_vertex_paint_settings,
     VIEW3D_PT_tools_grease_pencil_vertex_appearance,
-    VIEW3D_PT_tools_grease_pencil_interpolate,
     VIEW3D_PT_tools_grease_pencil_brush_mixcolor,
     VIEW3D_PT_tools_grease_pencil_brush_mix_palette,
 
