@@ -796,7 +796,7 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
   RNA_def_boolean(ot->srna,
                   "flip",
                   0,
-                  "Flip",
+                  "Flip Strokes",
                   "Invert destination stroke to match start and end with source stroke");
 
   prop = RNA_def_boolean(ot->srna, "release_confirm", 0, "Confirm on Release", "");
@@ -1353,7 +1353,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
   RNA_def_boolean(ot->srna,
                   "flip",
                   0,
-                  "Flip",
+                  "Flip Strokes",
                   "Invert destination stroke to match start and end with source stroke");
 
   RNA_def_enum(ot->srna,
@@ -1406,19 +1406,30 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
 
 static bool gpencil_interpolate_reverse_poll(bContext *C)
 {
-  if (!gpencil_view3d_poll(C)) {
-    return 0;
+  ScrArea *area = CTX_wm_area(C);
+  if (area == NULL) {
+    return false;
+  }
+  if ((area->spacetype != SPACE_VIEW3D) && (area->spacetype != SPACE_ACTION)) {
+    return false;
   }
 
-  bGPDlayer *gpl = CTX_data_active_gpencil_layer(C);
+  bGPdata *gpd = ED_gpencil_data_get_active(C);
+  if (gpd == NULL) {
+    return false;
+  }
+  bGPDlayer *gpl = BKE_gpencil_layer_active_get(gpd);
+  if (gpl == NULL) {
+    return false;
+  }
 
   /* need to be on a breakdown frame */
   if ((gpl->actframe == NULL) || (gpl->actframe->key_type != BEZT_KEYTYPE_BREAKDOWN)) {
     CTX_wm_operator_poll_msg_set(C, "Expected current frame to be a breakdown");
-    return 0;
+    return false;
   }
 
-  return 1;
+  return true;
 }
 
 static int gpencil_interpolate_reverse_exec(bContext *C, wmOperator *UNUSED(op))
@@ -1428,7 +1439,11 @@ static int gpencil_interpolate_reverse_exec(bContext *C, wmOperator *UNUSED(op))
   /* Go through each layer, deleting the breakdowns around the current frame,
    * but only if there is a keyframe nearby to stop at
    */
-  CTX_DATA_BEGIN (C, bGPDlayer *, gpl, editable_gpencil_layers) {
+  LISTBASE_FOREACH (bGPDlayer *, gpl, &gpd->layers) {
+    /* only editable and visible layers are considered */
+    if (!BKE_gpencil_layer_is_editable(gpl) || (gpl->actframe == NULL)) {
+      continue;
+    }
     bGPDframe *start_key = NULL;
     bGPDframe *end_key = NULL;
     bGPDframe *gpf, *gpfn;
@@ -1489,7 +1504,6 @@ static int gpencil_interpolate_reverse_exec(bContext *C, wmOperator *UNUSED(op))
       BLI_freelinkN(&gpl->frames, end_key);
     }
   }
-  CTX_DATA_END;
 
   /* notifiers */
   DEG_id_tag_update(&gpd->id, ID_RECALC_TRANSFORM | ID_RECALC_GEOMETRY);
