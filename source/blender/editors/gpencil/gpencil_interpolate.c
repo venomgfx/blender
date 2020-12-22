@@ -1025,6 +1025,7 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
   const bool is_multiedit = (bool)GPENCIL_MULTIEDIT_SESSIONS_ON(gpd);
   const bool all_layers = (bool)(RNA_enum_get(op->ptr, "layers") == 1);
   const bool only_selected = RNA_boolean_get(op->ptr, "interpolate_selected_only");
+  const bool flip = RNA_boolean_get(op->ptr, "flip");
   const int type = RNA_enum_get(op->ptr, "type");
 
   if (ipo_settings->custom_ipo == NULL) {
@@ -1093,10 +1094,24 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
         int fFrame = BLI_findindex(&prevFrame->strokes, gps_from);
         gps_to = BLI_findlink(&nextFrame->strokes, fFrame);
       }
-      /* Insert the pair entry in the hash table. */
-      if (gps_to != NULL) {
-        BLI_ghash_insert(pair_strokes, gps_from, gps_to);
+
+      if (ELEM(NULL, gps_from, gps_to)) {
+        continue;
       }
+
+      /* if destination stroke is smaller, resize new_stroke to size of gps_to stroke */
+      if (gps_from->totpoints > gps_to->totpoints) {
+        BKE_gpencil_stroke_uniform_subdivide(gpd, gps_to, gps_from->totpoints, true);
+      }
+      if (gps_to->totpoints > gps_from->totpoints) {
+        BKE_gpencil_stroke_uniform_subdivide(gpd, gps_from, gps_to->totpoints, true);
+      }
+      if (flip) {
+        BKE_gpencil_stroke_flip(gps_to);
+      }
+
+      /* Insert the pair entry in the hash table. */
+      BLI_ghash_insert(pair_strokes, gps_from, gps_to);
     }
 
     /* Loop over intermediary frames and create the interpolation. */
@@ -1126,14 +1141,6 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
       GHASH_ITER (gh_iter, pair_strokes) {
         bGPDstroke *gps_from = (bGPDstroke *)BLI_ghashIterator_getKey(&gh_iter);
         bGPDstroke *gps_to = (bGPDstroke *)BLI_ghashIterator_getValue(&gh_iter);
-
-        /* if destination stroke is smaller, resize new_stroke to size of gps_to stroke */
-        if (gps_from->totpoints > gps_to->totpoints) {
-          BKE_gpencil_stroke_uniform_subdivide(gpd, gps_to, gps_from->totpoints, true);
-        }
-        if (gps_to->totpoints > gps_from->totpoints) {
-          BKE_gpencil_stroke_uniform_subdivide(gpd, gps_from, gps_to->totpoints, true);
-        }
 
         /* Create new stroke. */
         bGPDstroke *new_stroke = BKE_gpencil_stroke_duplicate(gps_from, true, true);
