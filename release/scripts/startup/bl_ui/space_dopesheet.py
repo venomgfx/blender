@@ -568,14 +568,14 @@ class DOPESHEET_MT_gpencil_key(Menu):
         layout.operator_menu_enum("action.mirror", "type", text="Mirror")
 
         layout.separator()
-        layout.operator("action.duplicate")
+        layout.operator("action.duplicate_move", text="Duplicate")
 
         layout.separator()
         layout.operator("gpencil.interpolate_reverse")
         layout.operator("action.delete")
 
         layout.separator()
-        layout.operator("action.keyframe_type")
+        layout.operator("action.keyframe_type", text="Keyframe Type")
 
 
 class DOPESHEET_MT_delete(Menu):
