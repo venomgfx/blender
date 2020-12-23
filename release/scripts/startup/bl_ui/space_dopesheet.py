@@ -571,9 +571,6 @@ class DOPESHEET_MT_gpencil_key(Menu):
         layout.operator("action.keyframe_insert")
 
         layout.separator()
-        layout.operator("action.copy")
-
-        layout.separator()
         layout.operator("action.delete")
         layout.operator("gpencil.interpolate_reverse")
 
