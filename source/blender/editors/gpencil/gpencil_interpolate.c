@@ -1372,7 +1372,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
       "easing interpolation is applied to");
   RNA_def_float(ot->srna,
                 "back",
-                0.0f,
+                1.702f,
                 0.0f,
                 FLT_MAX,
                 "Back",
@@ -1381,7 +1381,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 FLT_MAX);
   RNA_def_float(ot->srna,
                 "amplitude",
-                0.0f,
+                0.8f,
                 0.0f,
                 FLT_MAX,
                 "Amplitude",
@@ -1390,7 +1390,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 FLT_MAX);
   RNA_def_float(ot->srna,
                 "period",
-                0.0f,
+                4.1f,
                 -FLT_MAX,
                 FLT_MAX,
                 "Period",
