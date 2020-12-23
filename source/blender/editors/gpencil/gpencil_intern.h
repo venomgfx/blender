@@ -154,6 +154,10 @@ typedef struct tGPDinterpolate {
   float high_limit;
   /** flag from toolsettings */
   int flag;
+  /** smooth factor */
+  float smooth_factor;
+  /** smooth iterations */
+  int smooth_steps;
 
   NumInput num; /* numeric input */
 } tGPDinterpolate;

@@ -1956,6 +1956,8 @@ class _defs_gpencil_paint:
             row = layout.row()
             row.prop(props, "layers")
             row.prop(props, "flip")
+            row.prop(props, "smooth_factor")
+            row.prop(props, "smooth_steps")
 
         return dict(
             idname="builtin.interpolate",
@@ -2138,6 +2140,8 @@ class _defs_gpencil_edit:
             row.prop(props, "layers")
             row.prop(props, "interpolate_selected_only")
             row.prop(props, "flip")
+            row.prop(props, "smooth_factor")
+            row.prop(props, "smooth_steps")
 
         return dict(
             idname="builtin.interpolate",

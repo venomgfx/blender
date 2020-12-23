@@ -3917,7 +3917,7 @@ void GPENCIL_OT_recalc_geometry(wmOperatorType *ot)
  * \{ */
 
 /* helper to smooth */
-static void gpencil_smooth_stroke(bContext *C, wmOperator *op)
+static void gpencil_interpolate_smooth_stroke(bContext *C, wmOperator *op)
 {
   const int repeat = RNA_int_get(op->ptr, "repeat");
   float factor = RNA_float_get(op->ptr, "factor");
@@ -4123,7 +4123,7 @@ static int gpencil_stroke_subdivide_exec(bContext *C, wmOperator *op)
 
     if (changed) {
       /* smooth stroke */
-      gpencil_smooth_stroke(C, op);
+      gpencil_interpolate_smooth_stroke(C, op);
     }
   }
 
@@ -4810,7 +4810,7 @@ static int gpencil_stroke_smooth_exec(bContext *C, wmOperator *op)
     return OPERATOR_CANCELLED;
   }
 
-  gpencil_smooth_stroke(C, op);
+  gpencil_interpolate_smooth_stroke(C, op);
 
   /* notifiers */
   DEG_id_tag_update(&gpd->id, ID_RECALC_TRANSFORM | ID_RECALC_GEOMETRY);

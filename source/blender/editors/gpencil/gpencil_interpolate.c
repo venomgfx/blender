@@ -172,6 +172,23 @@ static void gpencil_stroke_pair_table(bContext *C,
   }
 }
 
+static void gpencil_interpolate_smooth_stroke(bGPDstroke *gps,
+                                              float smooth_factor,
+                                              int smooth_steps)
+{
+  if (smooth_factor == 0.0f) {
+    return;
+  }
+
+  float reduce = 0.0f;
+  for (int r = 0; r < smooth_steps; r++) {
+    for (int i = 0; i < gps->totpoints - 1; i++) {
+      BKE_gpencil_stroke_smooth(gps, i, smooth_factor - reduce);
+      BKE_gpencil_stroke_smooth_strength(gps, i, smooth_factor);
+    }
+    reduce += 0.25f; /* reduce the factor */
+  }
+}
 /* Perform interpolation */
 static void gpencil_interpolate_update_points(const bGPDstroke *gps_from,
                                               const bGPDstroke *gps_to,
@@ -386,6 +403,7 @@ static void gpencil_interpolate_set_points(bContext *C, tGPDinterpolate *tgpi)
 
       /* Update points position. */
       gpencil_interpolate_update_points(gps_from, gps_to, new_stroke, tgpil->factor);
+      gpencil_interpolate_smooth_stroke(new_stroke, tgpi->smooth_factor, tgpi->smooth_steps);
 
       /* Calc geometry data. */
       BKE_gpencil_stroke_geometry_update(gpd, new_stroke);
@@ -529,6 +547,9 @@ static bool gpencil_interpolate_set_init_values(bContext *C, wmOperator *op, tGP
       ((GPENCIL_EDIT_MODE(tgpi->gpd)) && (RNA_boolean_get(op->ptr, "interpolate_selected_only"))),
       GP_TOOLFLAG_INTERPOLATE_ONLY_SELECTED);
   SET_FLAG_FROM_TEST(tgpi->flag, RNA_boolean_get(op->ptr, "flip"), GP_TOOLFLAG_INTERPOLATE_FLIP);
+
+  tgpi->smooth_factor = RNA_float_get(op->ptr, "smooth_factor");
+  tgpi->smooth_steps = RNA_int_get(op->ptr, "smooth_steps");
 
   /* Untag strokes to be sure nothing is pending due any canceled process. */
   LISTBASE_FOREACH (bGPDlayer *, gpl, &tgpi->gpd->layers) {
@@ -799,6 +820,26 @@ void GPENCIL_OT_interpolate(wmOperatorType *ot)
                   "Flip Strokes",
                   "Invert destination stroke to match start and end with source stroke");
 
+  RNA_def_int(ot->srna,
+              "smooth_steps",
+              1,
+              1,
+              3,
+              "Iterations",
+              "Number of times to smooth newly created strokes",
+              1,
+              3);
+
+  RNA_def_float(ot->srna,
+                "smooth_factor",
+                0.0f,
+                0.0f,
+                2.0f,
+                "Smooth",
+                "Amount of smoothing to apply to interpolated strokes, to reduce jitter/noise",
+                0.0f,
+                2.0f);
+
   prop = RNA_def_boolean(ot->srna, "release_confirm", 0, "Confirm on Release", "");
   RNA_def_property_flag(prop, PROP_HIDDEN | PROP_SKIP_SAVE);
 }
@@ -1028,6 +1069,9 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
                               (RNA_boolean_get(op->ptr, "interpolate_selected_only") != 0));
 
   const bool flip = RNA_boolean_get(op->ptr, "flip");
+  const float smooth_factor = RNA_float_get(op->ptr, "smooth_factor");
+  const int smooth_steps = RNA_int_get(op->ptr, "smooth_steps");
+
   const eGP_Interpolate_Type type = RNA_enum_get(op->ptr, "type");
 
   if (ipo_settings->custom_ipo == NULL) {
@@ -1151,6 +1195,7 @@ static int gpencil_interpolate_seq_exec(bContext *C, wmOperator *op)
 
         /* Update points position. */
         gpencil_interpolate_update_points(gps_from, gps_to, new_stroke, factor);
+        gpencil_interpolate_smooth_stroke(new_stroke, smooth_factor, smooth_steps);
 
         /* Calc geometry data. */
         BKE_gpencil_stroke_geometry_update(gpd, new_stroke);
@@ -1202,6 +1247,8 @@ static void gpencil_interpolate_seq_ui(bContext *C, wmOperator *op)
   uiItemR(col, &ptr, "layers", 0, NULL, ICON_NONE);
   uiItemR(col, &ptr, "interpolate_selected_only", 0, NULL, ICON_NONE);
   uiItemR(col, &ptr, "flip", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "smooth_factor", 0, NULL, ICON_NONE);
+  uiItemR(col, &ptr, "smooth_steps", 0, NULL, ICON_NONE);
   uiItemR(col, &ptr, "type", 0, NULL, ICON_NONE);
 
   if (type == GP_IPO_CURVEMAP) {
@@ -1356,12 +1403,33 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                   "Flip Strokes",
                   "Invert destination stroke to match start and end with source stroke");
 
+  RNA_def_int(ot->srna,
+              "smooth_steps",
+              1,
+              1,
+              3,
+              "Iterations",
+              "Number of times to smooth newly created strokes",
+              1,
+              3);
+
+  RNA_def_float(ot->srna,
+                "smooth_factor",
+                0.0f,
+                0.0f,
+                2.0f,
+                "Smooth",
+                "Amount of smoothing to apply to interpolated strokes, to reduce jitter/noise",
+                0.0f,
+                2.0f);
+
   RNA_def_enum(ot->srna,
                "type",
                gpencil_interpolation_type_items,
                0,
                "Type",
                "Interpolation method to use the next time 'Interpolate Sequence' is run");
+
   RNA_def_enum(
       ot->srna,
       "easing",
@@ -1370,6 +1438,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
       "Easing",
       "Which ends of the segment between the preceding and following grease pencil frames "
       "easing interpolation is applied to");
+
   RNA_def_float(ot->srna,
                 "back",
                 1.702f,
@@ -1379,6 +1448,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 "Amount of overshoot for 'back' easing",
                 0.0f,
                 FLT_MAX);
+
   RNA_def_float(ot->srna,
                 "amplitude",
                 0.15f,
@@ -1388,6 +1458,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 "Amount to boost elastic bounces for 'elastic' easing",
                 0.0f,
                 FLT_MAX);
+
   RNA_def_float(ot->srna,
                 "period",
                 0.15f,
