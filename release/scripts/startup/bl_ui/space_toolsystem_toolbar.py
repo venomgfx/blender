@@ -2853,7 +2853,6 @@ class VIEW3D_PT_tools_active(ToolSelectPanelHelper, Panel):
                 _defs_gpencil_edit.shear,
                 _defs_gpencil_edit.tosphere,
             ),
-            None,
             _defs_gpencil_edit.transform_fill,
             None,
             _defs_gpencil_edit.interpolate,
