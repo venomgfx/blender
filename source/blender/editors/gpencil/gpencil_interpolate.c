@@ -1381,7 +1381,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 FLT_MAX);
   RNA_def_float(ot->srna,
                 "amplitude",
-                0.8f,
+                0.15f,
                 0.0f,
                 FLT_MAX,
                 "Amplitude",
@@ -1390,7 +1390,7 @@ void GPENCIL_OT_interpolate_sequence(wmOperatorType *ot)
                 FLT_MAX);
   RNA_def_float(ot->srna,
                 "period",
-                4.1f,
+                0.15f,
                 -FLT_MAX,
                 FLT_MAX,
                 "Period",
