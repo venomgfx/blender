@@ -571,15 +571,11 @@ class DOPESHEET_MT_gpencil_key(Menu):
         layout.operator("action.duplicate")
 
         layout.separator()
-        layout.operator("action.delete")
         layout.operator("gpencil.interpolate_reverse")
+        layout.operator("action.delete")
 
         layout.separator()
         layout.operator("action.keyframe_type")
-
-        # layout.separator()
-        # layout.operator("action.copy")
-        # layout.operator("action.paste")
 
 
 class DOPESHEET_MT_delete(Menu):
