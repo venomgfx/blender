@@ -568,11 +568,20 @@ class DOPESHEET_MT_gpencil_key(Menu):
         layout.operator_menu_enum("action.mirror", "type", text="Mirror")
 
         layout.separator()
+        layout.operator("action.keyframe_insert")
+
+        layout.separator()
+        layout.operator("action.frame_jump")
+
+        layout.separator()
+        layout.operator("action.copy")
+        layout.operator("action.paste")
+        layout.operator("action.paste", text="Paste Flipped").flipped = True
         layout.operator("action.duplicate_move", text="Duplicate")
 
         layout.separator()
-        layout.operator("gpencil.interpolate_reverse")
         layout.operator("action.delete")
+        layout.operator("gpencil.interpolate_reverse")
 
         layout.separator()
         layout.operator("action.keyframe_type", text="Keyframe Type")
