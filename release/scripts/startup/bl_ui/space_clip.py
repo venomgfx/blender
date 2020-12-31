@@ -125,6 +125,24 @@ class CLIP_PT_clip_display(Panel):
             col.prop(clip, "display_aspect", text="Display Aspect Ratio")
 
 
+class CLIP_PT_proportional_edit(Panel):
+    bl_space_type = 'CLIP_EDITOR'
+    bl_region_type = 'HEADER'
+    bl_label = "Proportional Editing"
+    bl_ui_units_x = 8
+
+    def draw(self, context):
+        layout = self.layout
+        tool_settings = context.tool_settings
+        col = layout.column()
+        col.active = tool_settings.use_proportional_edit
+
+        col.prop(tool_settings, "use_proportional_connected")
+        col.separator()
+
+        col.prop(tool_settings, "proportional_edit_falloff", expand=True)
+
+
 class CLIP_HT_header(Header):
     bl_space_type = 'CLIP_EDITOR'
 
@@ -181,6 +199,7 @@ class CLIP_HT_header(Header):
 
             if sc.view == 'CLIP':
                 r = active_object.reconstruction
+                tool_settings = context.tool_settings
 
                 if r.is_valid and sc.view == 'CLIP':
                     layout.label(text="Solve error: %.2f px" %
@@ -192,6 +211,24 @@ class CLIP_HT_header(Header):
                 icon = 'LOCKED' if sc.lock_selection else 'UNLOCKED'
                 row.prop(sc, "lock_selection", icon=icon, text="")
                 row.popover(panel='CLIP_PT_display')
+
+                # Proportional Editing
+                row = layout.row(align=True)
+                row.prop(
+                    tool_settings,
+                    "use_proportional_edit",
+                    icon_only=True,
+                    icon='PROP_CON' if tool_settings.use_proportional_connected else 'PROP_ON',
+                )
+                sub = row.row(align=True)
+                sub.active = tool_settings.use_proportional_edit
+                sub.prop_with_popover(
+                    tool_settings,
+                    "proportional_edit_falloff",
+                    text="",
+                    icon_only=True,
+                    panel="CLIP_PT_proportional_edit",
+                )
 
             elif sc.view == 'GRAPH':
                 row = layout.row(align=True)
@@ -1781,6 +1818,7 @@ classes = (
     CLIP_PT_tools_scenesetup,
     CLIP_PT_annotation,
     CLIP_PT_tools_grease_pencil_draw,
+    CLIP_PT_proportional_edit,
     CLIP_MT_view_zoom,
     CLIP_MT_view,
     CLIP_MT_clip,

@@ -2830,6 +2830,7 @@ def km_clip_editor(params):
         ("clip.copy_tracks", {"type": 'C', "value": 'PRESS', "ctrl": True}, None),
         ("clip.paste_tracks", {"type": 'V', "value": 'PRESS', "ctrl": True}, None),
         *_template_items_context_menu("CLIP_MT_tracking_context_menu", params.context_menu_event),
+        *_template_items_proportional_editing(connected=False),
     ])
 
     if params.legacy:
