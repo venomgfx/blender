@@ -207,10 +207,6 @@ class CLIP_HT_header(Header):
 
                 row = layout.row()
                 row.prop(sc, "pivot_point", text="", icon_only=True)
-                row = layout.row(align=True)
-                icon = 'LOCKED' if sc.lock_selection else 'UNLOCKED'
-                row.prop(sc, "lock_selection", icon=icon, text="")
-                row.popover(panel='CLIP_PT_display')
 
                 # Proportional Editing
                 row = layout.row(align=True)
@@ -229,6 +225,11 @@ class CLIP_HT_header(Header):
                     icon_only=True,
                     panel="CLIP_PT_proportional_edit",
                 )
+
+                row = layout.row(align=True)
+                icon = 'LOCKED' if sc.lock_selection else 'UNLOCKED'
+                row.prop(sc, "lock_selection", icon=icon, text="")
+                row.popover(panel='CLIP_PT_display')
 
             elif sc.view == 'GRAPH':
                 row = layout.row(align=True)
