@@ -134,6 +134,13 @@ TEST_F(TrackingTest, BKE_tracking_marker_get_interpolated)
       EXPECT_V2_NEAR(interpolated_marker.pos, float2(1.3333333f, 3.6666666f), 1e-6f);
     }
 
+    {
+      MovieTrackingMarker interpolated_marker;
+      EXPECT_TRUE(BKE_tracking_marker_get_interpolated(&track, 9, &interpolated_marker));
+      EXPECT_EQ(interpolated_marker.framenr, 9);
+      EXPECT_V2_NEAR(interpolated_marker.pos, float2(1.888888f, 1.4444444f), 1e-6f);
+    }
+
     BKE_tracking_track_free(&track);
   }
 

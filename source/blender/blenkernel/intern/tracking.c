@@ -1587,6 +1587,10 @@ bool BKE_tracking_marker_get_interpolated(struct MovieTrackingTrack *track,
   if (closest_marker == NULL) {
     return false;
   }
+  if (closest_marker->framenr == framenr && (closest_marker->flag & MARKER_DISABLED) == 0) {
+    *r_marker = *closest_marker;
+    return true;
+  }
 
   const MovieTrackingMarker *left_marker = get_usable_marker_for_interpolation(
       track, closest_marker, -1);
