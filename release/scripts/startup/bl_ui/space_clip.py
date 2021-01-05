@@ -1525,6 +1525,7 @@ class CLIP_MT_tracking_context_menu(Menu):
             layout.separator()
 
             layout.operator("clip.join_tracks")
+            layout.operator("clip.average_tracks")
 
             layout.separator()
 
