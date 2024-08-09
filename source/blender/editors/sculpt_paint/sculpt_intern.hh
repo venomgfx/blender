@@ -178,29 +178,6 @@ struct SculptRakeData {
   float angle;
 };
 
-/*************** Brush testing declarations ****************/
-struct SculptBrushTest {
-  float radius_squared;
-  float radius;
-  blender::float3 location;
-  float dist;
-  ePaintSymmetryFlags mirror_symmetry_pass;
-
-  int radial_symmetry_pass;
-  blender::float4x4 symm_rot_mat_inv;
-
-  /* For circle (not sphere) projection. */
-  float plane_view[4];
-
-  /* Some tool code uses a plane for its calculations. */
-  float plane_tool[4];
-
-  /* View3d clipping - only set rv3d for clipping */
-  RegionView3D *clip_rv3d;
-};
-
-using SculptBrushTestFn = bool (*)(SculptBrushTest &test, const float co[3]);
-
 /* Defines how transform tools are going to apply its displacement. */
 enum SculptTransformDisplacementMode {
   /* Displaces the elements from their original coordinates. */
@@ -797,11 +774,6 @@ void flush_update_done(const bContext *C, Object &ob, UpdateType update_type);
 void SCULPT_pbvh_clear(Object &ob);
 
 /**
- * Flush displacement from deformed blender::bke::pbvh::Tree to original layer.
- */
-void SCULPT_flush_stroke_deform(const Sculpt &sd, Object &ob, bool is_proxy_used);
-
-/**
  * Should be used after modifying the mask or Face Sets IDs.
  */
 void SCULPT_tag_update_overlays(bContext *C);
@@ -1168,14 +1140,6 @@ void SCULPT_flip_quat_by_symm_area(float quat[4],
                                    ePaintSymmetryAreas symmarea,
                                    const float pivot[3]);
 
-/**
- * Initialize a point-in-brush test
- */
-void SCULPT_brush_test_init(const SculptSession &ss, SculptBrushTest &test);
-
-bool SCULPT_brush_test_sphere_sq(SculptBrushTest &test, const float co[3]);
-bool SCULPT_brush_test_circle_sq(SculptBrushTest &test, const float co[3]);
-
 namespace blender::ed::sculpt_paint {
 
 bool node_fully_masked_or_hidden(const bke::pbvh::Node &node);
@@ -1190,15 +1154,6 @@ bool node_in_cylinder(const DistRayAABB_Precalc &dist_ray_precalc,
 
 }
 
-/**
- * Initialize a point-in-brush test with a given falloff shape.
- *
- * \param falloff_shape: #PAINT_FALLOFF_SHAPE_SPHERE or #PAINT_FALLOFF_SHAPE_TUBE.
- * \return The brush falloff function.
- */
-SculptBrushTestFn SCULPT_brush_test_init_with_falloff_shape(const SculptSession &ss,
-                                                            SculptBrushTest &test,
-                                                            char falloff_shape);
 const float *SCULPT_brush_frontface_normal_from_falloff_shape(const SculptSession &ss,
                                                               char falloff_shape);
 void SCULPT_cube_tip_init(const Sculpt &sd, const Object &ob, const Brush &brush, float mat[4][4]);
@@ -1728,7 +1683,7 @@ void surface_smooth_displace_step(Span<float3> laplacian_disp,
 
 /* Slide/Relax */
 void relax_vertex(SculptSession &ss,
-                  PBVHVertexIter *vd,
+                  PBVHVertRef vert,
                   float factor,
                   bool filter_boundary_face_sets,
                   float *r_final_pos);
@@ -2269,23 +2224,62 @@ float sculpt_calc_radius(const ViewContext &vc,
                          float3 location);
 }
 
-inline void *SCULPT_vertex_attr_get(const PBVHVertRef vertex, const SculptAttribute *attr)
+inline void *SCULPT_vertex_attr_get(const PBVHVertRef vert, const SculptAttribute *attr)
 {
   if (attr->data) {
     char *p = (char *)attr->data;
-    int idx = (int)vertex.i;
+    int idx = (int)vert.i;
 
     if (attr->data_for_bmesh) {
-      BMElem *v = (BMElem *)vertex.i;
+      BMElem *v = (BMElem *)vert.i;
       idx = v->head.index;
     }
 
-    return p + attr->elem_size * (int)idx;
-  }
-  else {
-    BMElem *v = (BMElem *)vertex.i;
-    return BM_ELEM_CD_GET_VOID_P(v, attr->bmesh_cd_offset);
+    return p + attr->elem_size * idx;
   }
 
-  return NULL;
+  BMElem *v = (BMElem *)vert.i;
+  return BM_ELEM_CD_GET_VOID_P(v, attr->bmesh_cd_offset);
+}
+inline void *SCULPT_vertex_attr_get(const int vert, const SculptAttribute *attr)
+{
+  if (attr->data) {
+    char *p = (char *)attr->data;
+
+    return p + attr->elem_size * vert;
+  }
+
+  BLI_assert_unreachable();
+  return nullptr;
+}
+
+inline void *SCULPT_vertex_attr_get(const CCGKey &key,
+                                    const SubdivCCGCoord vert,
+                                    const SculptAttribute *attr)
+{
+  if (attr->data) {
+    char *p = (char *)attr->data;
+    int idx = vert.to_index(key);
+
+    return p + attr->elem_size * idx;
+  }
+
+  BLI_assert_unreachable();
+  return nullptr;
+}
+
+inline void *SCULPT_vertex_attr_get(const BMVert *vert, const SculptAttribute *attr)
+{
+  if (attr->data) {
+    char *p = (char *)attr->data;
+    int idx = BM_elem_index_get(vert);
+
+    if (attr->data_for_bmesh) {
+      idx = vert->head.index;
+    }
+
+    return p + attr->elem_size * idx;
+  }
+
+  return BM_ELEM_CD_GET_VOID_P(vert, attr->bmesh_cd_offset);
 }

@@ -235,6 +235,15 @@ void calc_brush_distances(const SculptSession &ss,
                           Span<float3> positions,
                           eBrushFalloffShape falloff_shape,
                           MutableSpan<float> r_distances);
+void calc_brush_distances_squared(const SculptSession &ss,
+                                  Span<float3> vert_positions,
+                                  Span<int> vert_indices,
+                                  eBrushFalloffShape falloff_shape,
+                                  MutableSpan<float> r_distances);
+void calc_brush_distances_squared(const SculptSession &ss,
+                                  Span<float3> positions,
+                                  eBrushFalloffShape falloff_shape,
+                                  MutableSpan<float> r_distances);
 
 /** Set the factor to zero for all distances greater than the radius. */
 void filter_distances_with_radius(float radius, Span<float> distances, MutableSpan<float> factors);
@@ -333,6 +342,17 @@ void apply_translations(Span<float3> translations, const Set<BMVert *, 0> &verts
 
 /** Align the translations with plane normal. */
 void project_translations(MutableSpan<float3> translations, const float3 &plane);
+
+/**
+ * Cancel out translations already applied over the course of the operation from the new
+ * translations. This is used for tools that calculate new positions based on the original
+ * positions for the entirety of an operation. Conceptually this is the same as resetting the
+ * positions before each step of the operation, but combining that into the same loop should be
+ * preferrable for performance.
+ */
+void reset_translations_to_original(MutableSpan<float3> translations,
+                                    Span<float3> positions,
+                                    Span<float3> orig_positions);
 
 /**
  * Rotate translations to account for rotations from procedural deformation.
