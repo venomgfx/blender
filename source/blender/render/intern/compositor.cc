@@ -160,8 +160,11 @@ class Context : public realtime_compositor::Context {
   /* Viewer output result. */
   realtime_compositor::Result viewer_output_result_;
 
-  /* Cached textures that the compositor took ownership of. */
-  Vector<GPUTexture *> textures_;
+  /* Cached GPU and CPU passes that the compositor took ownership of. Those had their reference
+   * count incremented when accessed and need to be freed/have their reference count decremented
+   * when destroying the context. */
+  Vector<GPUTexture *> cached_gpu_passes_;
+  Vector<ImBuf *> cached_cpu_passes_;
 
  public:
   Context(const ContextInputData &input_data, TexturePool &texture_pool)
@@ -176,8 +179,11 @@ class Context : public realtime_compositor::Context {
   {
     output_result_.release();
     viewer_output_result_.release();
-    for (GPUTexture *texture : textures_) {
-      GPU_texture_free(texture);
+    for (GPUTexture *pass : cached_gpu_passes_) {
+      GPU_texture_free(pass);
+    }
+    for (ImBuf *pass : cached_cpu_passes_) {
+      IMB_freeImBuf(pass);
     }
   }
 
@@ -284,48 +290,71 @@ class Context : public realtime_compositor::Context {
     return viewer_output_result_;
   }
 
-  GPUTexture *get_input_texture(const Scene *scene,
-                                int view_layer_id,
-                                const char *pass_name) override
+  realtime_compositor::Result get_pass(const Scene *scene,
+                                       int view_layer_id,
+                                       const char *pass_name) override
   {
     if (!scene) {
-      return nullptr;
+      return realtime_compositor::Result(*this);
     }
 
-    Render *re = RE_GetSceneRender(scene);
-    RenderResult *rr = nullptr;
-    GPUTexture *input_texture = nullptr;
-
-    if (re) {
-      rr = RE_AcquireResultRead(re);
+    ViewLayer *view_layer = static_cast<ViewLayer *>(
+        BLI_findlink(&scene->view_layers, view_layer_id));
+    if (!view_layer) {
+      return realtime_compositor::Result(*this);
     }
 
-    if (rr) {
-      ViewLayer *view_layer = (ViewLayer *)BLI_findlink(&scene->view_layers, view_layer_id);
-      if (view_layer) {
-        RenderLayer *rl = RE_GetRenderLayer(rr, view_layer->name);
-        if (rl) {
-          RenderPass *rpass = RE_pass_find_by_name(rl, pass_name, get_view_name().data());
-
-          if (rpass && rpass->ibuf && rpass->ibuf->float_buffer.data) {
-            input_texture = RE_pass_ensure_gpu_texture_cache(re, rpass);
-
-            if (input_texture) {
-              /* Don't assume render keeps texture around, add our own reference. */
-              GPU_texture_ref(input_texture);
-              textures_.append(input_texture);
-            }
-          }
-        }
-      }
+    Render *render = RE_GetSceneRender(scene);
+    if (!render) {
+      return realtime_compositor::Result(*this);
     }
 
-    if (re) {
-      RE_ReleaseResult(re);
-      re = nullptr;
+    RenderResult *render_result = RE_AcquireResultRead(render);
+    if (!render_result) {
+      RE_ReleaseResult(render);
+      return realtime_compositor::Result(*this);
     }
 
-    return input_texture;
+    RenderLayer *render_layer = RE_GetRenderLayer(render_result, view_layer->name);
+    if (!render_layer) {
+      RE_ReleaseResult(render);
+      return realtime_compositor::Result(*this);
+    }
+
+    RenderPass *render_pass = RE_pass_find_by_name(
+        render_layer, pass_name, this->get_view_name().data());
+    if (!render_pass) {
+      RE_ReleaseResult(render);
+      return realtime_compositor::Result(*this);
+    }
+
+    if (!render_pass || !render_pass->ibuf || !render_pass->ibuf->float_buffer.data) {
+      RE_ReleaseResult(render);
+      return realtime_compositor::Result(*this);
+    }
+
+    const eGPUTextureFormat format = (render_pass->channels == 1) ? GPU_R32F :
+                                     (render_pass->channels == 3) ? GPU_RGB32F :
+                                                                    GPU_RGBA32F;
+    realtime_compositor::Result pass = realtime_compositor::Result(*this, format);
+
+    if (this->use_gpu()) {
+      GPUTexture *pass_texture = RE_pass_ensure_gpu_texture_cache(render, render_pass);
+      /* Don't assume render will keep pass data stored, add our own reference. */
+      GPU_texture_ref(pass_texture);
+      pass.wrap_external(pass_texture);
+      cached_gpu_passes_.append(pass_texture);
+    }
+    else {
+      /* Don't assume render will keep pass data stored, add our own reference. */
+      IMB_refImBuf(render_pass->ibuf);
+      pass.wrap_external(render_pass->ibuf->float_buffer.data,
+                         int2(render_pass->ibuf->x, render_pass->ibuf->y));
+      cached_cpu_passes_.append(render_pass->ibuf);
+    }
+
+    RE_ReleaseResult(render);
+    return pass;
   }
 
   StringRef get_view_name() const override
