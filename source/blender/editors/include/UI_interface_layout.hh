@@ -95,6 +95,9 @@ struct uiLayout : uiItem {
   float search_weight_;
 
  public:
+  uiLayout &absolute(bool align);
+  uiBlock *absolute_block();
+
   /**
    * Add a new box sub-layout, items placed in this sub-layout are added vertically one under
    * each other in a column and are surrounded by a box.
@@ -148,6 +151,12 @@ struct uiLayout : uiItem {
    */
   uiLayout &grid_flow(
       bool row_major, int columns_len, bool even_columns, bool even_rows, bool align);
+
+  /** Add a new list box sub-layout. */
+  uiLayout &list_box(uiList *ui_list, PointerRNA *actptr, PropertyRNA *actprop);
+
+  /** Add a new overlap sub-layout. */
+  uiLayout &overlap();
 
   /**
    * Create a "layout panel" which is a panel that is defined as part of the `uiLayout`. This
@@ -387,13 +396,6 @@ void uiLayoutListItemAddPadding(uiLayout *layout);
 
 bool uiLayoutEndsWithPanelHeader(const uiLayout &layout);
 
-uiLayout *uiLayoutListBox(uiLayout *layout,
-                          uiList *ui_list,
-                          PointerRNA *actptr,
-                          PropertyRNA *actprop);
-uiLayout *uiLayoutAbsolute(uiLayout *layout, bool align);
-uiLayout *uiLayoutOverlap(uiLayout *layout);
-uiBlock *uiLayoutAbsoluteBlock(uiLayout *layout);
 /** Pie menu layout: Buttons are arranged around a center. */
 uiLayout *uiLayoutRadial(uiLayout *layout);
 
