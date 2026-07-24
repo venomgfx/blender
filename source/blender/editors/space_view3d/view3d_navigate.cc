@@ -1005,7 +1005,7 @@ void axis_set_view(bContext *C,
 
     /* so we animate _from_ the camera location */
     Object *camera_eval = DEG_get_evaluated(CTX_data_ensure_evaluated_depsgraph(C), v3d->camera);
-    ED_view3d_from_object(camera_eval, rv3d->ofs, nullptr, &rv3d->dist, nullptr);
+    ED_view3d_from_object(camera_eval, rv3d->ofs, nullptr, &rv3d->dist, 0.0f, nullptr);
 
     V3D_SmoothParams sview = {nullptr};
     sview.camera_old = camera_eval;

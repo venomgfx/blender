@@ -151,8 +151,10 @@ void ED_view3d_to_m4(
  * \param ofs: The view offset, normally from #RegionView3D.ofs.
  * \param quat: The view rotation, quaternion normally from #RegionView3D.viewquat.
  * \param dist: The view distance from `ofs`, normally from #RegionView3D.dist.
+ * \param roll: The view roll angle to apply to `quat`, normally from #RegionView3D.camroll.
  */
-void ED_view3d_from_m4(const float mat[4][4], float ofs[3], float quat[4], const float *dist);
+void ED_view3d_from_m4(
+    const float mat[4][4], float ofs[3], float quat[4], const float *dist, float roll);
 
 /**
  * Set the #RegionView3D members from an objects transformation and optionally lens.
@@ -160,10 +162,11 @@ void ED_view3d_from_m4(const float mat[4][4], float ofs[3], float quat[4], const
  * \param ofs: The view offset to be set, normally from #RegionView3D.ofs.
  * \param quat: The view rotation to be set, quaternion normally from #RegionView3D.viewquat.
  * \param dist: The view distance from `ofs `to be set, normally from #RegionView3D.dist.
- * \param lens: The view lens angle set for cameras and lights, normally from View3D.lens.
+ * \param roll: The view roll angle to apply to `quat`, normally from #RegionView3D.camroll.
+ * \param r_lens: The view lens angle set for cameras and lights, normally from View3D.lens.
  */
 void ED_view3d_from_object(
-    const Object *ob, float ofs[3], float quat[4], const float *dist, float *lens);
+    const Object *ob, float ofs[3], float quat[4], const float *dist, float roll, float *r_lens);
 /**
  * Set the object transformation from #RegionView3D members.
  * View roll in quat will be removed by `roll`.

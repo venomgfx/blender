@@ -528,7 +528,8 @@ void ED_view3d_persp_switch_from_camera(const Depsgraph *depsgraph,
     Object *ob_camera_eval = DEG_get_evaluated(depsgraph, v3d->camera);
     rv3d->dist = ED_view3d_offset_distance(
         ob_camera_eval->object_to_world().ptr(), rv3d->ofs, VIEW3D_DIST_FALLBACK);
-    ED_view3d_from_object(ob_camera_eval, rv3d->ofs, rv3d->viewquat, &rv3d->dist, nullptr);
+    ED_view3d_from_object(
+        ob_camera_eval, rv3d->ofs, rv3d->viewquat, &rv3d->dist, rv3d->camroll, nullptr);
     WM_main_add_notifier(NC_SPACE | ND_SPACE_VIEW3D, v3d);
   }
 
@@ -640,17 +641,9 @@ void ED_view3d_camera_lock_init_ex(const Depsgraph *depsgraph,
       rv3d->dist = ED_view3d_offset_distance(
           ob_camera_eval->object_to_world().ptr(), rv3d->ofs, VIEW3D_DIST_FALLBACK);
     }
-    ED_view3d_from_object(ob_camera_eval, rv3d->ofs, rv3d->viewquat, &rv3d->dist, nullptr);
-
     /* Restore the roll removed when syncing from the camera object. */
-    if (rv3d->camroll != 0.0f) {
-      const float z_vec[3] = {0.0f, 0.0f, 1.0f};
-
-      float quat_mul[4];
-      axis_angle_normalized_to_quat(quat_mul, z_vec, rv3d->camroll);
-
-      mul_qt_qtqt(rv3d->viewquat, quat_mul, rv3d->viewquat);
-    }
+    ED_view3d_from_object(
+        ob_camera_eval, rv3d->ofs, rv3d->viewquat, &rv3d->dist, rv3d->camroll, nullptr);
   }
 }
 
@@ -1636,7 +1629,8 @@ bool ED_view3d_lock(RegionView3D *rv3d)
 /** \name View Transform Utilities
  * \{ */
 
-void ED_view3d_from_m4(const float mat[4][4], float ofs[3], float quat[4], const float *dist)
+void ED_view3d_from_m4(
+    const float mat[4][4], float ofs[3], float quat[4], const float *dist, const float roll)
 {
   float nmat[3][3];
 
@@ -1655,6 +1649,12 @@ void ED_view3d_from_m4(const float mat[4][4], float ofs[3], float quat[4], const
   if (quat) {
     mat3_normalized_to_quat(quat, nmat);
     invert_qt_normalized(quat);
+
+    if (roll != 0.0f) {
+      float quat_roll[4];
+      axis_angle_to_quat_single(quat_roll, 'Z', roll);
+      mul_qt_qtqt(quat, quat_roll, quat);
+    }
   }
 
   if (ofs && dist) {
@@ -1665,13 +1665,16 @@ void ED_view3d_from_m4(const float mat[4][4], float ofs[3], float quat[4], const
 void ED_view3d_to_m4(
     float mat[4][4], const float ofs[3], const float quat[4], const float dist, const float roll)
 {
-  float quat_result[4];
-  const float z_vec[3] = {0.0f, 0.0f, 1.0f};
-  /* Remove roll. */
-  axis_angle_normalized_to_quat(quat_result, z_vec, -roll);
-  mul_qt_qtqt(quat_result, quat_result, quat);
+  float quat_no_roll[4];
+  const float *quat_p = quat;
+  if (roll != 0.0f) {
+    /* Remove roll. */
+    axis_angle_to_quat_single(quat_no_roll, 'Z', -roll);
+    mul_qt_qtqt(quat_no_roll, quat_no_roll, quat);
+    quat_p = quat_no_roll;
+  }
 
-  const float iviewquat[4] = {-quat_result[0], quat_result[1], quat_result[2], quat_result[3]};
+  const float iviewquat[4] = {-quat_p[0], quat_p[1], quat_p[2], quat_p[3]};
   float dvec[3] = {0.0f, 0.0f, dist};
 
   quat_to_mat4(mat, iviewquat);
@@ -1679,17 +1682,21 @@ void ED_view3d_to_m4(
   sub_v3_v3v3(mat[3], dvec, ofs);
 }
 
-void ED_view3d_from_object(
-    const Object *ob, float ofs[3], float quat[4], const float *dist, float *lens)
+void ED_view3d_from_object(const Object *ob,
+                           float ofs[3],
+                           float quat[4],
+                           const float *dist,
+                           const float roll,
+                           float *r_lens)
 {
-  ED_view3d_from_m4(ob->object_to_world().ptr(), ofs, quat, dist);
+  ED_view3d_from_m4(ob->object_to_world().ptr(), ofs, quat, dist, roll);
 
-  if (lens) {
+  if (r_lens) {
     CameraParams params;
 
     BKE_camera_params_init(&params);
     BKE_camera_params_from_object(&params, ob);
-    *lens = params.lens;
+    *r_lens = params.lens;
   }
 }
 

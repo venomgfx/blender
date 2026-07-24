@@ -1432,7 +1432,7 @@ static void rna_RegionView3D_view_matrix_set(PointerRNA *ptr, const float *value
   RegionView3D *rv3d = static_cast<RegionView3D *>(ptr->data);
   float mat[4][4];
   invert_m4_m4(mat, reinterpret_cast<float (*)[4]>(const_cast<float *>(values)));
-  ED_view3d_from_m4(mat, rv3d->ofs, rv3d->viewquat, &rv3d->dist);
+  ED_view3d_from_m4(mat, rv3d->ofs, rv3d->viewquat, &rv3d->dist, 0.0f);
   rna_RegionView3D_view_rotation_set_validate_view_axis(rv3d);
 }
 

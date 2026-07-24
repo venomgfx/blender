@@ -226,7 +226,7 @@ static bool object_apply_mat4_with_protect(
       mul_m4_m4m4(diff_mat, obmat_protect, obmat_noprotect_inv);
 
       mul_m4_m4m4(view_mat_protect, diff_mat, view_mat);
-      ED_view3d_from_m4(view_mat_protect, rv3d->ofs, rv3d->viewquat, &rv3d->dist);
+      ED_view3d_from_m4(view_mat_protect, rv3d->ofs, rv3d->viewquat, &rv3d->dist, 0.0f);
       view_changed = true;
     }
   }
