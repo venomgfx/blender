@@ -44,6 +44,8 @@
 
 #include "outliner_intern.hh" /* own include */
 
+#include "tree/tree_iterator.hh"
+
 namespace blender {
 
 namespace ed::outliner {
@@ -234,8 +236,6 @@ static wmOperatorStatus collection_new_exec(bContext *C, wmOperator *op)
   Collection *collection = nullptr;
 
   if (RNA_boolean_get(op->ptr, "nested")) {
-    outliner_build_tree(bmain, workspace, scene, view_layer, space_outliner, region);
-
     if (TreeElement *active_te = outliner_find_element_with_flag(&space_outliner->runtime->tree,
                                                                  TSE_ACTIVE))
     {
@@ -267,6 +267,18 @@ static wmOperatorStatus collection_new_exec(bContext *C, wmOperator *op)
     ED_outliner_select_sync_from_collection_tag(C);
     ED_outliner_select_sync_flag_outliners(C);
   }
+
+  outliner_build_tree(bmain, workspace, scene, view_layer, space_outliner, region);
+  bool is_textbut_set = false;
+  tree_iterator::all_open(*space_outliner, [&](TreeElement *te) {
+    TreeStoreElem *tselem = TREESTORE(te);
+    if (Collection *collection = outliner_collection_from_tree_element(te)) {
+      if ((new_collection == collection) && !is_textbut_set) {
+        tselem->flag |= TSE_TEXTBUT;
+        is_textbut_set = true;
+      }
+    }
+  });
 
   DEG_id_tag_update(&collection->id, ID_RECALC_SYNC_TO_EVAL);
   DEG_relations_tag_update(bmain);
