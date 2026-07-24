@@ -129,7 +129,7 @@ enum LibraryFlag {
  *
  * Update #ID_TYPE_IS_DEPRECATED() when deprecating types.
  */
-enum ID_Type {
+enum ID_Type : uint16_t {
   ID_SCE = MAKE_ID2('S', 'C'),       /* Scene */
   ID_LI = MAKE_ID2('L', 'I'),        /* Library */
   ID_OB = MAKE_ID2('O', 'B'),        /* Object */
