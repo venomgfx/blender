@@ -255,7 +255,7 @@ void blo_do_versions_503(FileData * /*fd*/, Library * /*lib*/, Main *bmain)
           /* The "Paint" brush asset was renamed to "Add Weight", find it via the default instead
            * of hard-coding the new name. */
           if (std::optional<AssetWeakReference> paint_brush_asset_reference =
-                  BKE_paint_brush_type_default_reference(PaintMode::Weight,
+                  BKE_paint_brush_type_default_reference(bke::paint::AssetCategory::MeshWeight,
                                                          WPAINT_BRUSH_TYPE_DRAW))
           {
             BKE_paint_brush_set(bmain, &wpaint->paint, *paint_brush_asset_reference);
